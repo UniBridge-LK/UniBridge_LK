@@ -189,6 +189,68 @@ class ProfileView extends  GetView<ProfileController> {
                         helperText: 'Email cannot be changed',
                       ),
                     ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      key: ValueKey('accountType_${user.accountType}'),
+                      initialValue: user.accountType == 'individual'
+                          ? 'Individual'
+                          : user.accountType == 'organization'
+                              ? 'Organization'
+                              : 'Not specified',
+                      enabled: false,
+                      decoration: InputDecoration(
+                        labelText: 'Account Type',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.account_circle_outlined),
+                      ),
+                    ),
+                    if (user.accountType == 'individual') ...[
+                      SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey('university_${user.universityName}'),
+                        initialValue: user.universityName.isNotEmpty ? user.universityName : 'Not provided',
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: 'University',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.school_outlined),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey('faculty_${user.faculty}'),
+                        initialValue: user.faculty.isNotEmpty ? user.faculty : 'Not provided',
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: 'Faculty',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey('department_${user.department}'),
+                        initialValue: user.department.isNotEmpty ? user.department : 'Not provided',
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: 'Department',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.apartment_outlined),
+                        ),
+                      ),
+                    ] else if (user.accountType == 'organization') ...[
+                      SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey('organization_${user.organizationName}'),
+                        initialValue: user.organizationName.isNotEmpty ? user.organizationName : 'Not provided',
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: 'Organization Name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.business_outlined),
+                        ),
+                      ),
+                    ],
                     Obx(() => controller.isEditing ? Column(
                       children: [
                         SizedBox(height: 24),

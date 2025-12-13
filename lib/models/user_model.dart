@@ -9,6 +9,12 @@ class UserModel {
   final bool isOnline;
   final DateTime lastSeen;
   final DateTime createdAt;
+  final String accountType; // 'individual' or 'organization'
+  final String universityName;
+  final String faculty;
+  final String department;
+  final String organizationName;
+  final bool isEmailVerified;
 
   UserModel({
     required this.id,
@@ -18,6 +24,12 @@ class UserModel {
     this.isOnline = false,
     required this.lastSeen,
     required this.createdAt,
+    this.accountType = '',
+    this.universityName = '',
+    this.faculty = '',
+    this.department = '',
+    this.organizationName = '',
+    this.isEmailVerified = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +41,12 @@ class UserModel {
       'isOnline': isOnline,
       'lastSeen': lastSeen,
       'createdAt': createdAt,
+      'accountType': accountType,
+      'universityName': universityName,
+      'faculty': faculty,
+      'department': department,
+      'organizationName': organizationName,
+      'isEmailVerified': isEmailVerified,
     };
   }
 
@@ -54,6 +72,12 @@ class UserModel {
       isOnline: map['isOnline'] ?? false,
       lastSeen: parseDateTime(map['lastSeen']),
       createdAt: parseDateTime(map['createdAt']),
+      accountType: map['accountType'] ?? '',
+      universityName: map['universityName'] ?? '',
+      faculty: map['faculty'] ?? '',
+      department: map['department'] ?? '',
+      organizationName: map['organizationName'] ?? '',
+      isEmailVerified: map['isEmailVerified'] ?? false,
     );
   }
 
@@ -65,6 +89,12 @@ class UserModel {
     bool? isOnline,
     DateTime? lastSeen,
     DateTime? createdAt,
+    String? accountType,
+    String? universityName,
+    String? faculty,
+    String? department,
+    String? organizationName,
+    bool? isEmailVerified,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -74,6 +104,12 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
       createdAt: createdAt ?? this.createdAt,
+      accountType: accountType ?? this.accountType,
+      universityName: universityName ?? this.universityName,
+      faculty: faculty ?? this.faculty,
+      department: department ?? this.department,
+      organizationName: organizationName ?? this.organizationName,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
     );
   }
 }

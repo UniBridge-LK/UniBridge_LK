@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Chat with AKS',
+      title: 'UniBridge LK',
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       initialRoute: AppPages.initial,

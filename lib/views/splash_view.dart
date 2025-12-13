@@ -53,7 +53,14 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
     await Future.delayed(Duration(milliseconds: 500));
 
     if (authController.isAuthenticated) {
-      Get.offAllNamed(AppRoutes.profile);
+      final user = authController.user;
+      if (user == null) {
+        Get.offAllNamed(AppRoutes.login);
+        return;
+      }
+      // Defer to AuthController routing which now checks Firestore isEmailVerified
+      // Simply do nothing here; AuthController's ever() will navigate.
+      return;
     } else {
       Get.offAllNamed(AppRoutes.login);
     }    
@@ -94,15 +101,19 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.chat_bubble_rounded,
-                      color: AppTheme.primaryColor,
-                      size: 60,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Image.asset(
+                        'lib/img/UniBridge_logo.png',
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   SizedBox(height: 32),
                   Text(
-                    'Chat AKS',
+                    'UniBridge LK',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

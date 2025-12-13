@@ -4,6 +4,7 @@ import 'package:chat_with_aks/views/forgot_password_view.dart';
 import 'package:chat_with_aks/views/login_view.dart';
 import 'package:chat_with_aks/views/profile_view.dart';
 import 'package:chat_with_aks/views/register_view.dart';
+import 'package:chat_with_aks/views/verify_otp_view.dart';
 import 'package:chat_with_aks/views/splash_view.dart';
 import 'package:get/get_navigation/get_navigation.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
@@ -22,6 +23,7 @@ class AppPages {
     GetPage(name: AppRoutes.register, page: () => const RegisterView()),
     GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordView()),
     GetPage(name: AppRoutes.changePassword, page: () => const ChangePasswordView()),
+    GetPage(name: AppRoutes.verifyOtp, page: () => const VerifyOtpView()),
     // GetPage(
     //   name: AppRoutes.home, 
     //   page: () => const HomeView(),
