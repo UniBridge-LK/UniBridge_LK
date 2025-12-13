@@ -1,0 +1,1285 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { 
+  BookOpen, Users, Calendar, MessageCircle, User, 
+  Settings, LogOut, Search, Plus, Check, X, Lock, 
+  ChevronLeft, School, GraduationCap, Code, Heart, 
+  MessageSquare, Send, Bell, Edit2, Save, AlertTriangle, Crown, Zap, Camera, Upload, 
+  Key, Star, Trash2, HelpCircle, MoreVertical
+} from 'lucide-react';
+
+// --- Global Configuration ---
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'unibridge-v-final';
+const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) ? JSON.parse(__firebase_config) : {};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+
+// Mock Data (based on your input)
+const UNIVERSITY_STRUCTURE = {
+  'University of Moratuwa': {
+    'Faculty of Engineering': ['Civil Engineering', 'Computer Science & Engineering', 'Electrical Engineering'],
+    'Faculty of Information & Technology': ['IT'],
+    'Faculty of Building Economy': ['Building & Property Management'],
+  },
+  'University of Colombo': {
+    'Faculty of Medicine': ['MBBS', 'Physiotherapy'],
+    'Faculty of Law': ['Law'],
+    'Faculty of Science': ['Physics', 'Chemistry'],
+  },
+};
+
+const MOCK_USERS = [
+  { uid: 'u1', name: 'Ahasa S.', uni: 'University of Moratuwa', course: 'Computer Science & Engineering', batch: '2023', type: 'undergraduate', bio: 'AI enthusiast and Cricket fan.', threads: 12, connections: 45 },
+  { uid: 'u2', name: 'Dr. S. K. Silva', uni: 'University of Colombo', title: 'Senior Lecturer', type: 'academicStaff', bio: 'Happy to guide medical students.', threads: 5, connections: 120 },
+  { uid: 'u3', name: 'Zain M.', uni: 'SLIIT', title: 'Alumnus', type: 'others', bio: 'Working professional in Tech.', threads: 8, connections: 30 },
+];
+
+const MOCK_REQUESTS = [
+  { id: 'r1', senderName: 'Kasun P.', senderId: 'ux', uni: 'UoM', note: 'Hi, saw your CSE thread.' },
+  { id: 'r2', senderName: 'Prof. Amara', senderId: 'uy', uni: 'UoC', note: 'Regarding your research query.' },
+];
+
+const MOCK_EVENTS = [
+  { id: 'e1', title: 'AI & Robotics Workshop', time: 'Oct 12, 10 AM', loc: 'UoM IT Fac.', host: 'AI Club' },
+  { id: 'e2', title: 'Medical Career Seminar', time: 'Nov 05, 2 PM', loc: 'UoC Hall', host: 'Med Students' },
+];
+
+// MOCK GLOBAL THREADS (Added ownerId for edit/delete check)
+const MOCK_GLOBAL_THREADS = [
+  { id: 101, title: "Which degree to choose after A/L?", author: "Student X", replies: 15, time: new Date(Date.now() - 3600000), content: "I'm confused about which science degree offers the best career path. Please share advice.", ownerId: 'u1_mock', uni: "University of Moratuwa", course: "General" },
+  { id: 102, title: "Is the IT job market saturated in 2026?", author: "Alumni Y", replies: 8, time: new Date(Date.now() - 7200000), content: "Alumni perspective needed: How competitive is the IT sector expected to be in the next few years?", ownerId: 'u2_mock', uni: "University of Peradeniya", course: "Medicine" },
+  { id: 103, title: "General guidance on campus life balance.", author: "Dr. Z", replies: 25, time: new Date(Date.now() - 10800000), content: "Tips on balancing studies, social life, and mental health during your undergraduate years.", ownerId: 'u1_mock', uni: "University of Colombo", course: "Arts" },
+];
+
+// MOCK REPLIES for the ThreadDetailModal
+const THREAD_REPLIES = [
+    { author: "Praveen", time: new Date(Date.now() - 10000), content: "The choice heavily depends on your passion. However, engineering typically offers a wider range of early career opportunities than pure science degrees in Sri Lanka. Consider your career goals first!", ownerId: 'u1_mock' },
+    { author: "Dr. Silva (UoC)", time: new Date(Date.now() - 600000), content: "If you have a passion for pure sciences, pursuing an MSc or PhD later will open up research and academic tracks. Don't be discouraged by starting salaries; think long term.", ownerId: 'u2_mock' },
+    { author: "Alumni Z", time: new Date(Date.now() - 1200000), content: "I chose IT, and while the field is competitive, specialization (e.g., AI or Cyber Security) is key. Don't just follow the crowd.", ownerId: 'u3_mock' },
+];
+
+
+// --- Firebase and App Context ---
+const initializedApp = initializeApp(firebaseConfig);
+const firestoreDB = getFirestore(initializedApp);
+const firebaseAuth = getAuth(initializedApp);
+
+// Utility for formatting time (using JS Date objects for simulation)
+const formatTime = (date) => {
+  if (!date) return 'Loading...';
+  const diff = new Date().getTime() - date.getTime();
+  const minutes = Math.floor(diff / (1000 * 60));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
+const AppContext = React.createContext();
+
+const AppProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false); 
+  const [offlineQueue, setOfflineQueue] = useState([]);
+  const [chatRooms, setChatRooms] = useState([{id: 'c1', user: 'Zain M.', lastMsg: 'Project done!', time: new Date()}]);
+
+  // Auth Listener
+  useEffect(() => {
+    const setupAuth = async () => {
+        try {
+            await signInAnonymously(firebaseAuth);
+        } catch (e) {
+            console.error("Auth failed:", e);
+        }
+    };
+    setupAuth();
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (u) => {
+      if (u) {
+        const userRef = doc(firestoreDB, `artifacts/${appId}/users/${u.uid}/profile/data`);
+        const docSnap = await getDoc(userRef);
+
+        if (!docSnap.exists()) {
+           const initialData = { 
+               displayName: `User ${u.uid.substring(0,4)}`, 
+               isPremium: false, 
+               isVerified: false, 
+               bio: 'Student bio...', 
+               interests: ['Programming', 'Cricket'], 
+               type: 'undergraduate', 
+               university: 'UoM', 
+               course: 'CSE',
+               profilePic: null 
+            };
+           await setDoc(userRef, initialData, { merge: true });
+           setUserData(initialData);
+        } else {
+           setUserData(docSnap.data());
+        }
+        setUser(u);
+      } else {
+        setUser(null);
+        setUserData(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync user data in real-time
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(firestoreDB, `artifacts/${appId}/users/${user.uid}/profile/data`);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setUserData(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Offline Queue Logic Simulation (Retained for feature fulfillment)
+  const queueMessage = useCallback((chatId, text) => {
+    setOfflineQueue(prev => [...prev, { id: Date.now(), chatId, text, time: new Date() }]);
+  }, []);
+
+  const processQueue = useCallback(() => {
+    if (!user || !offlineQueue.length) return;
+    setOfflineQueue([]);
+    alert(`[SYSTEM] ${offlineQueue.length} queued messages delivered to Firestore!`);
+  }, [offlineQueue, user]);
+
+  useEffect(() => {
+    if (!isOffline && offlineQueue.length > 0) {
+      processQueue();
+    }
+  }, [isOffline, offlineQueue.length, processQueue]);
+
+  const value = useMemo(() => ({
+    user,
+    userData,
+    loading,
+    isOffline,
+    setIsOffline,
+    offlineQueue,
+    queueMessage,
+    setUserData,
+    chatRooms,
+    setChatRooms
+  }), [user, userData, loading, isOffline, offlineQueue, queueMessage, chatRooms]);
+
+  if (loading) return <LoadingScreen />;
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+// --- General UI Components ---
+
+const Button = ({ children, onClick, variant = 'primary', icon: Icon, className = '' }) => {
+  const baseStyle = "px-4 py-2 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2";
+  const variants = {
+    primary: "bg-[#6C5CE7] text-white hover:bg-[#5A4BD1] shadow-md",
+    secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200",
+    danger: "bg-red-500 text-white hover:bg-red-600",
+    success: "bg-[#00B894] text-white hover:bg-[#00a383]",
+  };
+  return (
+    <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
+      {Icon && <Icon size={18} />}
+      <span>{children}</span>
+    </button>
+  );
+};
+
+const LoadingScreen = () => (
+    <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+            <Zap className="h-10 w-10 text-[#6C5CE7] animate-spin mx-auto" />
+            <p className="mt-4 text-gray-600">Connecting UniBridge LK...</p>
+        </div>
+    </div>
+);
+
+const PremiumPopup = ({ onClose }) => (
+  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div className="bg-white w-full max-w-sm rounded-3xl p-6 relative overflow-hidden text-center">
+      <button onClick={onClose} className="absolute top-4 right-4 text-gray-400"><X size={20} /></button>
+      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="currentColor"/>
+      <h2 className="2xl font-bold text-gray-900 mb-2">Unlock Premium</h2>
+      <p className="text-gray-600 mb-6">Access features like Chat Initiation, Event Creation, and unlimited connections with the community (Staff, Students, Alumni).</p>
+      <Button variant="primary" className="w-full bg-orange-500 hover:bg-orange-600">Buy Premium - LKR 500/mo</Button>
+    </div>
+  </div>
+);
+
+// --- Small Utility Components (Defined first) ---
+
+const DetailRow = ({ icon: Icon, label, value }) => (
+    <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+        <Icon size={20} className="text-[#6C5CE7]" />
+        <div>
+            <p className="text-xs text-gray-500">{label}</p>
+            <p className="font-medium text-gray-700">{value}</p>
+        </div>
+    </div>
+);
+
+const CircleAvatar = ({ name, size }) => (
+    <div className="bg-purple-100 text-[#6C5CE7] font-bold rounded-full flex items-center justify-center" style={{ width: size, height: size, fontSize: size / 2.5 }}>
+        {name ? name[0].toUpperCase() : 'U'}
+    </div>
+);
+
+const SettingItem = ({ icon: Icon, label, onClick, color, isDestructive = false }) => (
+    <div className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${isDestructive ? 'hover:bg-red-50' : 'hover:bg-gray-50'}`} onClick={onClick}>
+        <div className="flex items-center">
+            <Icon size={20} className={`${color || 'text-[#6C5CE7]'} mr-3`} />
+            <span className={isDestructive ? 'text-red-500' : 'text-gray-700'}>{label}</span>
+        </div>
+        <ChevronLeft size={16} className={`-rotate-180 ${isDestructive ? 'text-red-500' : 'text-gray-400'}`} />
+    </div>
+);
+
+const SettingToggle = ({ icon: Icon, label, isEnabled, onToggle }) => (
+    <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+        <div className="flex items-center">
+            <Icon size={20} className="text-[#6C5CE7] mr-3" />
+            <span className="text-gray-700">{label}</span>
+        </div>
+        <div 
+           className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${isEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+           onClick={onToggle}
+        >
+             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isEnabled ? 'left-6' : 'left-1'}`}></div>
+        </div>
+    </div>
+);
+
+// --- Modals for Thread Management ---
+
+const CreateThreadModal = ({ onClose, onSuccess }) => {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    
+    const handleSubmit = () => {
+        if (!title || !content) return alert('Title and content are required.');
+        alert('Thread posted successfully!');
+        onSuccess();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 relative">
+                <h3 className="text-xl font-bold mb-4">Create New Discussion</h3>
+                <input placeholder="Title (e.g., Which degree should I choose?)" className="w-full border p-2 rounded-lg mb-3 text-sm" value={title} onChange={e => setTitle(e.target.value)}/>
+                <textarea placeholder="Elaborate on your question here..." className="w-full border p-2 rounded-lg text-sm h-24 mb-4" value={content} onChange={e => setContent(e.target.value)}/>
+                <div className="flex justify-end space-x-2">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSubmit} icon={Send}>Post Thread</Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ThreadDetailModal = ({ thread, onClose, currentUserId }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedContent, setEditedContent] = useState(thread.content);
+    const [replyContent, setReplyContent] = useState('');
+    const isOwner = currentUserId === thread.ownerId; // Corrected check
+    
+    const handleSave = () => {
+        alert(`Thread ID ${thread.id} updated with new content: ${editedContent.substring(0, 20)}...`);
+        setIsEditing(false);
+    };
+
+    const handleReply = () => {
+        if (!replyContent) return;
+        alert(`Reply posted: ${replyContent}`);
+        setReplyContent('');
+    };
+
+    const handleDelete = () => {
+        if (window.confirm('Are you sure you want to delete this thread?')) {
+            alert(`Thread ID ${thread.id} deleted.`);
+            onClose();
+        }
+    };
+    
+    const KebabMenu = () => {
+        const [menuOpen, setMenuOpen] = useState(false);
+        return (
+            <div className="relative">
+                <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }} className="p-1 rounded-full hover:bg-gray-100">
+                    <MoreVertical size={20} />
+                </button>
+                {menuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-xl py-1 z-10 origin-top-right animate-in fade-in zoom-in-95">
+                        <Button variant="ghost" className="w-full justify-start text-sm" icon={Edit2} onClick={() => { setIsEditing(true); setMenuOpen(false); }}>
+                            Edit Thread
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start text-sm text-red-500" icon={Trash2} onClick={handleDelete}>Delete</Button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-t-3xl p-6 relative h-5/6 flex flex-col">
+                <div className="flex justify-between items-center pb-3 border-b mb-3">
+                    <h3 className="text-xl font-bold truncate pr-4">{thread.title}</h3>
+                    <div className="flex items-center space-x-2">
+                        {isOwner && <KebabMenu />}
+                        <button onClick={onClose} className="text-gray-400 hover:text-red-500"><X size={24}/></button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto mb-4">
+                    {/* Thread Owner & Info */}
+                    <p className="text-xs text-gray-500 mb-3">Posted by {thread.author} • {formatTime(thread.time)} • {thread.replies} Replies</p>
+
+                    {/* Thread Content */}
+                    {isEditing ? (
+                        <textarea value={editedContent} onChange={e => setEditedContent(e.target.value)} className="w-full border p-3 rounded-lg h-32"/>
+                    ) : (
+                        <p className="text-gray-700 whitespace-pre-wrap">{thread.content}</p>
+                    )}
+                    
+                    {/* Owner Actions - Show Save button if editing */}
+                    {isEditing && (
+                        <div className="mt-4">
+                            <Button variant="primary" icon={Save} onClick={handleSave}>Save Edits</Button>
+                        </div>
+                    )}
+                    
+                    <h4 className="font-bold mt-6 mb-3 border-t pt-3">Replies ({thread.replies})</h4>
+                    
+                    {/* Detailed Reply List (Properly populated) */}
+                    <div className="space-y-3">
+                        {THREAD_REPLIES.map((reply, i) => (
+                            <div key={i} className="bg-gray-100 p-3 rounded-lg">
+                                <p className="font-semibold text-sm">{reply.author}</p>
+                                <p className="text-xs text-gray-500 mb-1">{formatTime(reply.time)}</p>
+                                <p className="text-gray-700">{reply.content}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Reply Input */}
+                <div className="pt-3 border-t flex space-x-2 flex-shrink-0">
+                    <input 
+                        placeholder="Write a reply..." 
+                        className="flex-1 border px-3 py-2 rounded-full"
+                        value={replyContent}
+                        onChange={e => setReplyContent(e.target.value)}
+                    />
+                    <Button onClick={handleReply} icon={Send} className="h-10 w-10 p-0 rounded-full"/>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 6. Forum Screen (Dedicated Tab for Global/General Threads)
+const ForumScreen = () => {
+    const [isCreating, setIsCreating] = useState(false);
+    const [selectedThread, setSelectedThread] = useState(null);
+    const currentUserId = 'u1_mock'; // Mock current user ID
+    
+    // --- Sample Thread Card Renderer ---
+    const ThreadCard = ({ thread }) => {
+        const isOwner = currentUserId === thread.ownerId;
+        return (
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 cursor-pointer">
+                <div onClick={() => setSelectedThread(thread)}>
+                    <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-lg text-gray-800">{thread.title}</h3>
+                        {/* Kebab Menu (Visible only if owner) */}
+                        {isOwner && (
+                            <div className="relative">
+                                <button onClick={(e) => { e.stopPropagation(); alert('Opening Kebab Menu...'); }} className="p-1 rounded-full hover:bg-gray-100">
+                                    <MoreVertical size={20} />
+                                </button>
+                                {/* In a real app, this button would trigger a state change to display a dropdown menu */}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Secondary details (University • Category) */}
+                    <p className="text-xs text-gray-500 mb-2">
+                        {thread.uni} • {thread.course}
+                    </p>
+                    
+                    {/* Preview Content */}
+                    <p className="text-gray-600 line-clamp-2 mb-3">
+                        {thread.content.substring(0, 70)}...
+                    </p>
+                    
+                    {/* Bottom Info Row (Author, Time, Replies) */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 border-t pt-2">
+                        <span>{thread.author} • {formatTime(thread.time)}</span>
+                        {/* Interactive Reply Count */}
+                        <div onClick={(e) => { e.stopPropagation(); setSelectedThread(thread); }} className="flex items-center text-purple-600 font-medium cursor-pointer hover:text-purple-700">
+                            {thread.replies} <MessageSquare size={14} className="ml-1" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    if (selectedThread) {
+        return <ThreadDetailModal thread={selectedThread} onClose={() => setSelectedThread(null)} currentUserId={currentUserId} />;
+    }
+    
+    return (
+        <div className="p-4 pt-safe pb-24">
+            <h1 className="text-2xl font-extrabold text-[#6C5CE7] mb-4">Global Forum</h1>
+            <p className="text-gray-500 text-sm mb-4">Discuss degrees, career paths, and questions common to all universities.</p>
+            
+            {/* Threads List */}
+            <div className="space-y-3">
+                {MOCK_GLOBAL_THREADS.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+            </div>
+            
+            {/* Floating Action Button for Creation */}
+            <button 
+                onClick={() => setIsCreating(true)}
+                className="fixed bottom-24 right-4 w-14 h-14 bg-[#6C5CE7] rounded-full flex items-center justify-center text-white shadow-lg"
+            >
+                <Plus size={24} />
+            </button>
+            
+            {isCreating && <CreateThreadModal onClose={() => setIsCreating(false)} onSuccess={() => setIsCreating(false)} />}
+        </div>
+    );
+};
+
+
+// 1. Home Screen (Structured Directory)
+const HomeScreen = ({ setCurrentTab }) => { // Added setCurrentTab prop
+    // 4-Level Navigation State
+    const [view, setView] = useState('uni_list'); // uni_list | faculty_list | course_list | course_threads
+    const [selectedUni, setSelectedUni] = useState(null);
+    const [selectedFac, setSelectedFac] = useState(null);
+    const [selectedDept, setSelectedDept] = useState(null); // Renamed from selectedCourse
+
+    const threads = [{ id: 1, title: "Admission cut-off marks?", replies: 5, time: new Date() }];
+
+    // --- State Transitions ---
+
+    const handleUniSelect = (uni) => { setSelectedUni(uni); setView('faculty_list'); };
+    const handleFacSelect = (fac) => { setSelectedFac(fac); setView('course_list'); };
+    const handleDeptSelect = (dept) => { setSelectedDept(dept); setView('course_threads'); };
+
+    const goBack = () => {
+        if (view === 'course_threads') {
+            setView('course_list');
+            setSelectedDept(null);
+        } else if (view === 'course_list') {
+            setView('faculty_list');
+            setSelectedFac(null);
+        } else if (view === 'faculty_list') {
+            setView('uni_list');
+            setSelectedUni(null);
+        }
+    };
+    
+    // --- Render Logic Components ---
+    
+    const renderNavHeader = (title) => (
+        <div className="mb-4">
+            {view !== 'uni_list' && (
+                <button onClick={goBack} className="text-sm text-gray-500 flex items-center mb-4">
+                    <ChevronLeft size={16}/> Back
+                </button>
+            )}
+            <h1 className="text-2xl font-extrabold text-[#6C5CE7]">{title}</h1>
+            
+            {view !== 'uni_list' && (
+                <p className="text-sm font-medium text-gray-600 mt-1">
+                    {selectedUni} {selectedFac && ` > ${selectedFac}`} {selectedDept && ` > ${selectedDept}`}
+                </p>
+            )}
+        </div>
+    );
+
+    const renderList = (data, title, onSelect) => (
+        <div className="mt-4 space-y-3">
+            <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+            {Object.keys(data).map((key) => (
+                <div key={key} onClick={() => onSelect(key)} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer hover:border-[#6C5CE7]">
+                    <span className="font-medium text-gray-700">{key}</span>
+                    <ChevronLeft size={20} className="-rotate-180 text-gray-400" />
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderUniversityList = () => (
+        <div className="pt-safe pb-24">
+            
+            {/* GLOBAL FORUM CARD (TOP) - Click navigates to Forum tab */}
+            <div className="bg-gradient-to-r from-[#6C5CE7] to-[#7F5CD1] p-4 rounded-xl text-white mt-4 mb-8 shadow-lg">
+               <h3 className="font-bold mb-1 flex items-center"><MessageCircle size={18} className="mr-2"/> Global Forum</h3>
+               <p className="text-xs text-purple-100 mb-3">Discuss degrees, career paths, and questions common to all universities.</p>
+               <button className="bg-white text-[#6C5CE7] px-3 py-1 rounded-lg text-xs font-bold" onClick={() => setCurrentTab('forum')}>
+                   View Global Threads
+               </button>
+            </div>
+
+            <h1 className="text-xl font-extrabold text-[#6C5CE7] mt-4 mb-4">
+                Browse Universities
+            </h1>
+            <p className="text-gray-500 text-sm mb-4">
+                Find threads related to specific Universities, Faculties, and Departments.
+            </p>
+            
+            <div className="mt-4 space-y-3">
+                {Object.keys(UNIVERSITY_STRUCTURE).map((uniName) => {
+                    const facultyCount = Object.keys(UNIVERSITY_STRUCTURE[uniName]).length;
+                    return (
+                        <div key={uniName} onClick={() => handleUniSelect(uniName)} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer hover:border-[#6C5CE7]">
+                            <div className="flex items-center">
+                                <School size={20} className="text-gray-400 mr-3" />
+                                <div>
+                                    <span className="font-medium text-gray-700">{uniName}</span>
+                                    <p className="text-xs text-gray-500 mt-0.5">{facultyCount} Faculties Listed</p>
+                                </div>
+                            </div>
+                            <ChevronLeft size={20} className="-rotate-180 text-gray-400" />
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    const renderFacultyList = () => (
+        <div className="pt-safe pb-24">
+            {renderNavHeader(selectedUni)}
+            {renderList(UNIVERSITY_STRUCTURE[selectedUni], 'Faculties', handleFacSelect)}
+            
+            {/* General Uni Forum Card (PURPLE/PRIMARY) */}
+            <div className="bg-gradient-to-r from-[#6C5CE7] to-[#7F5CD1] p-4 rounded-xl text-white mt-6 shadow-lg">
+               <h3 className="font-bold mb-1 flex items-center"><MessageCircle size={18} className="mr-2"/> General University Forum</h3>
+               <p className="text-xs text-purple-100 mb-3">Discuss hostels, canteen food, and campus life irrespective of course.</p>
+               <button className="bg-white text-[#6C5CE7] px-3 py-1 rounded-lg text-xs font-bold" onClick={() => setCurrentTab('forum')}>View Uni Threads</button>
+            </div>
+        </div>
+    );
+    
+    const renderDepartmentList = () => (
+        <div className="pt-safe pb-24">
+            {renderNavHeader(selectedFac)}
+            {renderList(UNIVERSITY_STRUCTURE[selectedUni][selectedFac], 'Departments', handleDeptSelect)}
+            
+            {/* General Faculty Forum Card (PURPLE/PRIMARY) */}
+            <div className="bg-gradient-to-r from-[#6C5CE7] to-[#7F5CD1] p-4 rounded-xl text-white mt-6 shadow-lg">
+                <h3 className="font-bold mb-1 flex items-center"><MessageCircle size={18} className="mr-2"/> General Faculty Forum</h3>
+                <p className="text-xs text-purple-100 mb-3">Discuss faculty-wide resources and news.</p>
+                <button className="bg-white text-[#6C5CE7] px-3 py-1 rounded-lg text-xs font-bold" onClick={() => setCurrentTab('forum')}>View Faculty Threads</button>
+            </div>
+        </div>
+    );
+
+    const renderThreadsView = () => (
+        <div className="pt-safe pb-24">
+            {renderNavHeader(selectedDept)}
+            <h3 className="text-lg font-bold text-gray-800 mb-3">Threads for {selectedDept}</h3>
+            
+            <div className="mt-4">
+                <p className="text-gray-500 italic">Threads for this department are shown in the Forum tab...</p>
+                <Button className="mt-4 w-full" onClick={() => setCurrentTab('forum')}>Go to Forum</Button>
+            </div>
+            
+            <div className="mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-3">User Manual (Help)</h3>
+                <div className="bg-gray-100 p-4 rounded-xl text-sm space-y-2">
+                    <p className="font-semibold text-xs text-gray-700">Access Guide:</p>
+                    <p className="text-gray-600">The User Manual is here to guide you immediately on app flows, verification, and premium features. (Reason: Easily accessible from the main structure/directory).</p>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="p-4 pt-safe pb-24">
+            {view === 'uni_list' && renderUniversityList()}
+            {view === 'faculty_list' && renderFacultyList()}
+            {view === 'course_list' && renderDepartmentList()}
+            {view === 'course_threads' && renderThreadsView()}
+        </div>
+    );
+};
+
+// 2. People Screen
+const PeopleScreen = () => {
+    const { userData } = React.useContext(AppContext);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+    const filteredUsers = MOCK_USERS.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const openProfile = (user) => {
+        setSelectedUser(user);
+        setIsProfileModalOpen(true);
+    };
+
+    const handleConnect = (user) => {
+        if (!userData || !userData.isPremium) {
+            setIsPremiumModalOpen(true);
+        } else {
+            alert(`Sending connection request to ${user.name}...`);
+        }
+    };
+
+    const renderProfileModal = () => {
+        if (!isProfileModalOpen || !selectedUser) return null;
+        return (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                <div className="bg-white w-full max-w-sm rounded-3xl p-6 text-center">
+                    <button onClick={() => setIsProfileModalOpen(false)} className="absolute top-4 right-4 text-gray-400"><X size={20} /></button>
+                    <CircleAvatar name={selectedUser.name} size={60} />
+                    <h3 className="text-xl font-bold mt-2">{selectedUser.name}</h3>
+                    <p className="text-sm text-gray-500">{selectedUser.uni} | {selectedUser.type === 'undergraduate' ? selectedUser.course : selectedUser.title}</p>
+                    <div className="my-3 bg-gray-100 p-3 rounded-xl text-sm italic max-h-32 overflow-y-auto">
+                        "{selectedUser.bio}"
+                    </div>
+                    <div className="flex justify-around my-4">
+                        <div><p className="font-bold">{selectedUser.threads}</p><p className="text-xs text-gray-500">Threads</p></div>
+                        <div><p className="font-bold">{selectedUser.connections}</p><p className="text-xs text-gray-500">Connects</p></div>
+                    </div>
+                    <Button variant="primary" className="w-full" onClick={() => handleConnect(selectedUser)}>
+                        Connect
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="p-4 pt-safe pb-24">
+            {renderProfileModal()}
+            {isPremiumModalOpen && <PremiumPopup onClose={() => setIsPremiumModalOpen(false)} />}
+            
+            <h1 className="text-2xl font-extrabold text-[#6C5CE7] mb-4">People</h1>
+            <input 
+                type="text" 
+                placeholder="Search by name or course..." 
+                className="w-full px-4 py-2 mb-4 rounded-xl border border-gray-200"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            
+            <div className="space-y-3">
+                {filteredUsers.map((user) => (
+                    <div key={user.uid} onClick={() => openProfile(user)} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer">
+                        <div className="flex items-center space-x-3">
+                            <CircleAvatar name={user.name} size={40} />
+                            <div>
+                                <p className="font-semibold text-gray-800">{user.name}</p>
+                                <p className="text-xs text-gray-500">{user.uni} | {user.type === 'undergraduate' ? user.batch : user.title}</p>
+                            </div>
+                        </div>
+                        <Button 
+                            variant={userData?.isPremium ? 'primary' : 'secondary'} 
+                            className="w-24 h-8 text-sm"
+                            onClick={(e) => { e.stopPropagation(); handleConnect(user); }}
+                        >
+                            Connect
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// 6. Forum Screen (Dedicated Tab for Global/General Threads)
+const ForumScreen = () => {
+    const [isCreating, setIsCreating] = useState(false);
+    const [selectedThread, setSelectedThread] = useState(null);
+    const currentUserId = 'u1_mock'; // Mock current user ID
+    
+    // --- Sample Thread Card Renderer ---
+    const ThreadCard = ({ thread }) => {
+        const isOwner = currentUserId === thread.ownerId;
+        return (
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 cursor-pointer">
+                <div onClick={() => setSelectedThread(thread)}>
+                    <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-lg text-gray-800">{thread.title}</h3>
+                        {/* Kebab Menu (Visible only if owner) */}
+                        {isOwner && (
+                            <div className="relative">
+                                <button onClick={(e) => { e.stopPropagation(); alert('Opening Kebab Menu...'); }} className="p-1 rounded-full hover:bg-gray-100">
+                                    <MoreVertical size={20} />
+                                </button>
+                                {/* In a real app, this button would trigger a state change to display a dropdown menu */}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Secondary details (University • Category) */}
+                    <p className="text-xs text-gray-500 mb-2">
+                        {thread.uni} • {thread.course}
+                    </p>
+                    
+                    {/* Preview Content */}
+                    <p className="text-gray-600 line-clamp-2 mb-3">
+                        {thread.content.substring(0, 70)}...
+                    </p>
+                    
+                    {/* Bottom Info Row (Author, Time, Replies) */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 border-t pt-2">
+                        <span>{thread.author} • {formatTime(thread.time)}</span>
+                        {/* Interactive Reply Count */}
+                        <div onClick={(e) => { e.stopPropagation(); setSelectedThread(thread); }} className="flex items-center text-purple-600 font-medium cursor-pointer hover:text-purple-700">
+                            {thread.replies} <MessageSquare size={14} className="ml-1" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    if (selectedThread) {
+        return <ThreadDetailModal thread={selectedThread} onClose={() => setSelectedThread(null)} currentUserId={currentUserId} />;
+    }
+    
+    return (
+        <div className="p-4 pt-safe pb-24">
+            <h1 className="text-2xl font-extrabold text-[#6C5CE7] mb-4">Global Forum</h1>
+            <p className="text-gray-500 text-sm mb-4">Discuss degrees, career paths, and questions common to all universities.</p>
+            
+            {/* Threads List */}
+            <div className="space-y-3">
+                {MOCK_GLOBAL_THREADS.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+            </div>
+            
+            {/* Floating Action Button for Creation */}
+            <button 
+                onClick={() => setIsCreating(true)}
+                className="fixed bottom-24 right-4 w-14 h-14 bg-[#6C5CE7] rounded-full flex items-center justify-center text-white shadow-lg"
+            >
+                <Plus size={24} />
+            </button>
+            
+            {isCreating && <CreateThreadModal onClose={() => setIsCreating(false)} onSuccess={() => setIsCreating(false)} />}
+        </div>
+    );
+};
+
+
+// 3. Events Screen (Used as Forum in previous turns, now dedicated Events)
+const EventsScreen = () => {
+    const { userData } = React.useContext(AppContext);
+    const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+    const handleCreateEvent = () => {
+        if (!userData || !userData.isPremium) {
+            setIsPremiumModalOpen(true);
+        } else {
+            alert('Opening Create Event Form (Premium Feature)');
+        }
+    };
+
+    return (
+        <div className="p-4 pt-safe pb-24">
+            {isPremiumModalOpen && <PremiumPopup onClose={() => setIsPremiumModalOpen(false)} />}
+            <h1 className="2xl font-extrabold text-[#6C5CE7] mb-4">Events</h1>
+            <p className="text-sm text-gray-600 mb-4">Seminars, workshops, and career fairs organized by the community.</p>
+            
+            <div className="space-y-4">
+                {MOCK_EVENTS.map((event) => (
+                    <div key={event.id} className="bg-white p-4 rounded-xl shadow-md border-l-4 border-[#00B894]">
+                        <p className="font-bold text-gray-800">{event.title}</p>
+                        <p className="text-sm text-gray-600 mt-1">{event.time} @ {event.loc}</p>
+                        <p className="text-xs text-gray-500 mt-2">Hosted by: {event.host}</p>
+                        <Button variant="secondary" className="mt-3 text-xs h-8" onClick={() => alert('Opening external link: ' + event.title)}>
+                            View Details / Register
+                        </Button>
+                    </div>
+                ))}
+            </div>
+            
+            <button 
+                onClick={handleCreateEvent}
+                className="fixed bottom-24 right-4 w-14 h-14 bg-[#6C5CE7] rounded-full flex items-center justify-center text-white shadow-lg"
+            >
+                <Plus size={24} />
+            </button>
+        </div>
+    );
+};
+
+// 4. Chats Screen
+const ChatsScreen = () => {
+    const { userData, isOffline, offlineQueue, queueMessage, chatRooms, setChatRooms } = React.useContext(AppContext);
+    const [tab, setTab] = useState('chats');
+    const [messageInput, setMessageInput] = useState('');
+    const [activeChat, setActiveChat] = useState(null);
+
+    const handleSendMessage = () => {
+        if (!messageInput.trim()) return;
+
+        if (!userData || !userData.isPremium) {
+             alert("Error: You must be Premium to send messages.");
+             return;
+        }
+
+        if (isOffline) {
+            queueMessage(activeChat.id, messageInput);
+            setMessageInput('');
+            return;
+        }
+
+        // Simulated online send
+        setChatRooms(prev => prev.map(c => 
+            c.id === activeChat.id ? {...c, lastMsg: messageInput, time: new Date()} : c
+        ));
+        setMessageInput('');
+    };
+
+    const handleAcceptRequest = (requestId) => {
+        // Find and remove request from MOCK_REQUESTS
+        const acceptedRequest = MOCK_REQUESTS.find(r => r.id === requestId);
+        if (acceptedRequest) {
+            // Simulated adding to chatRooms
+            setChatRooms(prev => [...prev, {
+                id: `c_${Date.now()}`,
+                user: acceptedRequest.senderName,
+                lastMsg: 'Accepted!',
+                time: new Date()
+            }]);
+            MOCK_REQUESTS.splice(MOCK_REQUESTS.findIndex(r => r.id === requestId), 1);
+            alert(`Accepted request from ${acceptedRequest.senderName}. Chat started.`);
+        }
+    };
+    
+    const handleRejectRequest = (requestId) => {
+        MOCK_REQUESTS.splice(MOCK_REQUESTS.findIndex(r => r.id === requestId), 1);
+        alert(`Request rejected.`);
+    };
+
+    const renderChatRoom = () => {
+        if (!activeChat) return null;
+        return (
+            <div className="fixed inset-0 bg-white z-40 flex flex-col pt-safe">
+                <div className="p-4 border-b flex items-center space-x-3">
+                    <button onClick={() => setActiveChat(null)}><ChevronLeft size={24} /></button>
+                    <h3 className="font-bold">{activeChat.user}</h3>
+                </div>
+                
+                {/* Offline Warning */}
+                {isOffline && (
+                    <div className="bg-red-100 text-red-700 text-center p-2 text-sm flex items-center justify-center">
+                        <AlertTriangle size={16} className="mr-2"/> OFFLINE: Message will be queued.
+                    </div>
+                )}
+
+                <div className="flex-1 p-4 overflow-y-auto text-center text-gray-500">
+                    <p className="text-xs bg-yellow-50 p-2 rounded-lg my-2">⚠️ Messages older than 3 days are automatically deleted.</p>
+                    {/* Placeholder for messages */}
+                    <p className="mt-4">Chat content...</p>
+                    {offlineQueue.filter(q => q.chatId === activeChat.id).map(q => (
+                       <div key={q.id} className="my-2 p-2 bg-blue-100 rounded-lg text-left text-sm">
+                          (Pending) {q.text}
+                       </div>
+                    ))}
+                </div>
+                
+                <div className="p-3 border-t flex space-x-2">
+                    <input 
+                        type="text"
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        placeholder={!userData?.isPremium ? "Buy Premium to send..." : "Type a message..."}
+                        disabled={!userData?.isPremium && !isOffline}
+                        className="flex-1 px-4 py-2 rounded-full border border-gray-300"
+                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    />
+                    <Button onClick={handleSendMessage} variant="primary" icon={Send} className="h-10 w-10 p-0 rounded-full" />
+                </div>
+            </div>
+        );
+    };
+
+    const renderChats = () => (
+        <div className="space-y-2 mt-4">
+            {chatRooms.map(c => (
+                <div key={c.id} onClick={() => setActiveChat(c)} className="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center hover:bg-gray-50 cursor-pointer">
+                    <div className="flex items-center space-x-3">
+                        <CircleAvatar name={c.user} size={40} />
+                        <div>
+                            <p className="font-semibold">{c.user}</p>
+                            <p className="text-sm text-gray-600 truncate max-w-[150px]">{c.lastMsg}</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-400">{formatTime(c.time)}</p>
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderRequests = () => (
+        <div className="space-y-4 mt-4">
+            {MOCK_REQUESTS.map(req => (
+                <div key={req.id} className="bg-gray-50 p-4 rounded-xl">
+                    <p onClick={() => alert(`Showing profile for ${req.senderName}...`)} className="font-bold cursor-pointer hover:underline">{req.senderName} ({req.uni})</p>
+                    <p className="text-sm italic my-2">Note: "{req.note}"</p>
+                    <div className="flex space-x-2">
+                        <Button variant="success" className="flex-1" icon={Check} onClick={() => handleAcceptRequest(req.id)}>Accept</Button>
+                        <Button variant="secondary" className="flex-1" icon={X} onClick={() => handleRejectRequest(req.id)}>Delete</Button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+    
+    const renderBlocked = () => (
+        <div className="space-y-4 mt-4">
+            {['Spammer A', 'Bully B'].map(name => (
+                <div key={name} className="bg-gray-50 p-3 rounded-xl flex justify-between items-center">
+                    <p onClick={() => alert(`Showing profile for ${name}...`)} className="font-bold cursor-pointer text-red-600">{name}</p>
+                    <Button variant="secondary" className="text-xs h-8" icon={Zap}>Unblock</Button>
+                </div>
+            ))}
+        </div>
+    );
+
+    return (
+        <div className="p-4 pt-safe pb-24">
+            {renderChatRoom()}
+            <h1 className="2xl font-extrabold text-[#6C5CE7] mb-4">Chats</h1>
+            
+            <div className="flex border-b mb-4">
+                {['chats', 'requests', 'blocked'].map(t => (
+                    <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 font-medium capitalize relative ${tab === t ? 'text-[#6C5CE7] border-b-2 border-[#6C5CE7]' : 'text-gray-500'}`}>
+                        {t}
+                        {t === 'requests' && MOCK_REQUESTS.length > 0 && (
+                             <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">{MOCK_REQUESTS.length}</span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {tab === 'chats' && renderChats()}
+            {tab === 'requests' && renderRequests()}
+            {tab === 'blocked' && renderBlocked()}
+        </div>
+    );
+};
+
+// 5. Profile Screen
+const ProfileScreen = ({ setSettingsOpen }) => {
+    const { user, userData, setUserData } = React.useContext(AppContext);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isPicModalOpen, setIsPicModalOpen] = useState(false);
+    const [profilePic, setProfilePic] = useState(userData?.profilePic || null);
+    
+    const [bioInput, setBioInput] = useState(userData?.bio || ''); 
+    const maxBioChars = 200;
+
+    // Use a reference to simulate file input click
+    const fileInputRef = useRef(null); 
+
+    const handleSave = () => {
+        if (bioInput.length > maxBioChars) {
+            alert(`Error: Bio exceeds ${maxBioChars} characters.`);
+            return;
+        }
+        // Simulated save logic (update Firestore/local state)
+        // updateDoc(doc(firestoreDB, `artifacts/${appId}/users/${user.uid}/profile/data`), { bio: bioInput, interests: ['Programming', 'Cricket'], profilePic: profilePic });
+        setUserData(prev => ({...prev, bio: bioInput}));
+        setIsEditing(false);
+    };
+
+    const handleSignOut = () => {
+        signOut(firebaseAuth);
+    };
+    
+    const handlePicUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfilePic(reader.result); // Save Base64 or URL
+                setIsPicModalOpen(false);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const isVerified = userData?.isVerified;
+    const isPremium = userData?.isPremium;
+
+    return (
+        <div className="p-4 pt-safe pb-24">
+             {/* Profile Header (Title, Settings Icon) */}
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+                <h1 className="text-xl font-bold">My Profile</h1>
+                <div className="flex space-x-3">
+                    <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full hover:bg-gray-100">
+                        <Settings size={24} className="text-gray-600"/>
+                    </button>
+                </div>
+            </div>
+            
+            {/* Profile Picture Edit Modal */}
+            {isPicModalOpen && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-sm rounded-2xl p-5 text-center">
+                        <h3 className="font-bold mb-4">Change Profile Photo</h3>
+                        <Button variant="secondary" icon={Camera} className="w-full mb-3" onClick={() => {fileInputRef.current.click();}}>Take Photo</Button>
+                        <Button variant="secondary" icon={Upload} className="w-full mb-3" onClick={() => {fileInputRef.current.click();}}>Upload from Gallery</Button>
+                        <Button variant="secondary" className="w-full" onClick={() => setIsPicModalOpen(false)}>Cancel</Button>
+                        
+                        {/* Hidden file input */}
+                        <input type="file" ref={fileInputRef} onChange={handlePicUpload} accept="image/*" style={{ display: 'none' }} />
+                    </div>
+                </div>
+            )}
+            
+            <div className="bg-white p-6 rounded-2xl shadow-lg text-center flex flex-col items-center">
+                
+                {/* Profile Picture (Centered) */}
+                <div className="relative w-24 h-24 mb-3" onClick={() => setIsPicModalOpen(true)}>
+                    <div className="w-full h-full rounded-full bg-purple-100 text-[#6C5CE7] flex items-center justify-center text-3xl font-bold border-4 border-white shadow-md cursor-pointer">
+                        {profilePic ? (
+                            <img src={profilePic} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                            userData?.displayName[0] || 'U'
+                        )}
+                    </div>
+                    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full border border-gray-200 shadow-sm">
+                        <Camera size={16} className="text-gray-600" />
+                    </div>
+                </div>
+                
+                <h2 className="text-xl font-bold mt-3">{userData?.displayName || 'New User'}</h2>
+                <p className="text-sm text-gray-500">{userData?.university || 'Not Set'}</p>
+                
+                <div className="flex justify-center space-x-2 mt-2">
+                    {isVerified && <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs flex items-center"><Check size={12} className="mr-1"/> Verified</span>}
+                    {isPremium && <span className="bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full text-xs flex items-center"><Crown size={12} className="mr-1"/> Premium</span>}
+                </div>
+                
+                <div className="mt-4 w-full">
+                    {!isEditing ? (
+                        <>
+                            <p className="text-sm italic mb-4">"{userData?.bio || 'Add a bio to tell others about yourself!'}"</p>
+                            <Button onClick={() => setIsEditing(true)} variant="secondary" icon={Edit2} className="h-10">Edit Bio</Button>
+                        </>
+                    ) : (
+                        <div className="w-full">
+                            <textarea 
+                                value={bioInput}
+                                onChange={(e) => setBioInput(e.target.value)}
+                                placeholder="Write your bio (max 200 chars)"
+                                className={`w-full p-2 border rounded-lg resize-none ${bioInput.length > maxBioChars ? 'border-red-500' : 'border-gray-300'}`}
+                                rows="4"
+                            />
+                            <div className="flex justify-between text-xs mt-1">
+                                <p className={bioInput.length > maxBioChars ? 'text-red-500' : 'text-gray-500'}>{bioInput.length}/{maxBioChars} Characters</p>
+                                <Button onClick={handleSave} variant="primary" icon={Save} className="h-8 px-3">Save</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="mt-6 space-y-3 px-4">
+                <h3 className="font-bold text-gray-700">User Details</h3>
+                <DetailRow icon={School} label="University" value={userData?.university || 'N/A'} />
+                <DetailRow icon={GraduationCap} label="Course/Title" value={userData?.course || userData?.title || 'N/A'} />
+            </div>
+
+            {/* REMOVED SETTINGS SHORTCUTS */}
+            
+            {/* Sign Out (Moved to bottom of content, as requested) */}
+            <div className="mt-8 px-4">
+                <Button onClick={handleSignOut} variant="secondary" icon={LogOut} className="w-full text-red-500 border-red-200">Sign Out</Button>
+            </div>
+        </div>
+    );
+};
+
+// --- Settings Page (New Component) ---
+
+const SettingsPage = ({ onBack, onSignOut }) => {
+    const { userData, setUserData } = React.useContext(AppContext);
+
+    const toggleNotifications = () => {
+        alert('Toggling notifications is simulated here.');
+        // Logic to update user settings in Firestore
+    };
+    
+    const togglePremiumMock = () => {
+        // Toggle the premium status for demonstration purposes
+        setUserData(prev => ({ ...prev, isPremium: !prev.isPremium }));
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col pt-safe">
+            <div className="px-4 py-3 border-b bg-white flex items-center">
+                <button onClick={onBack}><ChevronLeft/></button>
+                <h2 className="ml-3 font-bold text-lg">Settings</h2>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto">
+                <div className="bg-white p-4 rounded-xl shadow-sm space-y-2">
+                    {/* Changed to reflect full feature list, removing shortcuts */}
+                    <SettingItem icon={Key} label="Change Password" onClick={() => alert('Navigating to Change Password Form.')} />
+                    <SettingItem icon={Star} label="Rate App" onClick={() => alert('Opening Play Store / App Store.')} />
+                    <SettingToggle icon={Bell} label="Notifications (On/Off)" isEnabled={true} onToggle={toggleNotifications} />
+                </div>
+                
+                <div className="bg-white p-4 rounded-xl shadow-sm space-y-2">
+                    <SettingItem 
+                        icon={Crown} 
+                        label={userData?.isPremium ? "Manage Premium" : "Buy Premium"} 
+                        onClick={() => alert(userData?.isPremium ? 'Managing subscription...' : 'Opening Premium purchase modal...')} 
+                        color="text-yellow-600"
+                    />
+                    <SettingItem 
+                        icon={HelpCircle} 
+                        label="Contact Support" 
+                        onClick={() => alert('Opening Contact Us form/email.')} 
+                    />
+                    <SettingItem 
+                        icon={Trash2} 
+                        label="Delete Account" 
+                        onClick={() => alert('Confirming account deletion...')} 
+                        color="text-red-500" 
+                        isDestructive={true}
+                    />
+                </div>
+                 
+                 {/* Removed Sign Out from Settings Page */}
+                 
+                 <div className="pt-4 bg-white p-4 rounded-xl shadow-sm">
+                     <p className="text-sm font-bold text-gray-700 mb-2">Developer Tools</p>
+                     <Button onClick={togglePremiumMock} variant="secondary" className="w-full text-xs">
+                        Toggle Premium Status (DEMO: currently {userData?.isPremium ? 'ON' : 'OFF'})
+                     </Button>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
+const SettingItem = ({ icon: Icon, label, onClick, color, isDestructive = false }) => (
+    <div className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${isDestructive ? 'hover:bg-red-50' : 'hover:bg-gray-50'}`} onClick={onClick}>
+        <div className="flex items-center">
+            <Icon size={20} className={`${color || 'text-[#6C5CE7]'} mr-3`} />
+            <span className={isDestructive ? 'text-red-500' : 'text-gray-700'}>{label}</span>
+        </div>
+        <ChevronLeft size={16} className={`-rotate-180 ${isDestructive ? 'text-red-500' : 'text-gray-400'}`} />
+    </div>
+);
+
+const SettingToggle = ({ icon: Icon, label, isEnabled, onToggle }) => (
+    <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+        <div className="flex items-center">
+            <Icon size={20} className="text-[#6C5CE7] mr-3" />
+            <span className="text-gray-700">{label}</span>
+        </div>
+        <div 
+           className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${isEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+           onClick={onToggle}
+        >
+             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isEnabled ? 'left-6' : 'left-1'}`}></div>
+        </div>
+    </div>
+);
+
+
+// --- Main App Component ---
+
+const App = () => {
+  const { isOffline, setIsOffline, offlineQueue } = React.useContext(AppContext);
+  const [currentTab, setCurrentTab] = useState('home');
+  const [settingsOpen, setSettingsOpen] = useState(false); // New state for Settings Page
+
+  // Handlers for Settings Page interaction
+  const handleSignOut = () => {
+    signOut(firebaseAuth);
+    setSettingsOpen(false);
+  };
+
+  const togglePremium = () => {
+      // Logic for toggling premium is handled inside the SettingsPage mock
+      setSettingsOpen(false); // Close settings after triggering action
+  };
+    
+  if (settingsOpen) {
+      return (
+          <SettingsPage 
+              onBack={() => setSettingsOpen(false)} 
+              onSignOut={handleSignOut}
+          />
+      );
+  }
+
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans">
+      {/* Global Header (No offline toggle needed here, kept internal for queue logic) */}
+      <div className="sticky top-0 z-30 bg-white shadow-sm px-4 py-3 flex justify-between items-center pt-safe">
+        <div className="flex items-center space-x-2">
+           <Zap className="text-[#6C5CE7] h-6 w-6"/>
+           <span className="font-bold text-lg text-[#6C5CE7]">UniBridge LK</span>
+        </div>
+        <div className="flex items-center space-x-4">
+             {/* Notifications */}
+             <Bell size={20} className="text-gray-600"/>
+             {offlineQueue.length > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full absolute top-1 right-1/4 translate-x-1/2">
+                    {offlineQueue.length}
+                </span>
+             )}
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div className="max-w-md mx-auto min-h-full">
+        {currentTab === 'home' && <HomeScreen setCurrentTab={setCurrentTab} />}
+        {currentTab === 'people' && <PeopleScreen />}
+        {currentTab === 'forum' && <ForumScreen />}
+        {currentTab === 'chats' && <ChatsScreen />}
+        {currentTab === 'profile' && <ProfileScreen setSettingsOpen={setSettingsOpen} />}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 flex justify-between items-end z-40 h-[70px]">
+         {[
+           {id: 'home', icon: BookOpen, label: 'Home'},
+           {id: 'people', icon: Users, label: 'People'},
+           {id: 'chats', icon: MessageCircle, label: 'Chats'},
+           {id: 'events', icon: Calendar, label: 'Events'}, // Changed order
+           {id: 'profile', icon: User, label: 'Profile'}
+         ].map(t => (
+            <button key={t.id} onClick={() => setCurrentTab(t.id)} className={`flex-1 flex flex-col items-center justify-center h-full pb-2 ${currentTab === t.id ? 'text-[#6C5CE7]' : 'text-gray-400'}`}>
+               <t.icon size={24} strokeWidth={currentTab === t.id ? 2.5 : 2}/>
+               <span className="text-[10px] font-medium mt-1">{t.label}</span>
+            </button>
+         ))}
+      </div>
+    </div>
+  );
+};
+
+export default () => (
+    <AppProvider>
+        <App />
+    </AppProvider>
+);
