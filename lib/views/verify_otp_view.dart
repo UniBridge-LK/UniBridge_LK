@@ -116,6 +116,24 @@ class _VerifyOtpViewState extends State<VerifyOtpView> {
     final email = FirebaseAuth.instance.currentUser?.email ?? '';
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Act like a standard back button: pop current route only.
+            // This preserves the previous page's state.
+            if (Get.isDialogOpen == true) {
+              Get.back();
+              return;
+            }
+            // Prefer Navigator.pop to avoid rebuilding previous via routing.
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+              return;
+            }
+            // Fallback to Get.back if navigator can't pop.
+            Get.back();
+          },
+        ),
         title: const Text('Enter verification code'),
       ),
       body: Padding(
@@ -190,6 +208,7 @@ class _VerifyOtpViewState extends State<VerifyOtpView> {
                 label: const Text('Resend code'),
               ),
             ),
+            // Cancel button removed; back arrow added in AppBar
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:chat_with_aks/controllers/profile_controller.dart';
+import 'package:chat_with_aks/views/admin_view.dart';
 import 'package:chat_with_aks/views/change_password_view.dart';
 import 'package:chat_with_aks/views/forgot_password_view.dart';
 import 'package:chat_with_aks/views/login_view.dart';
@@ -24,6 +25,7 @@ class AppPages {
     GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordView()),
     GetPage(name: AppRoutes.changePassword, page: () => const ChangePasswordView()),
     GetPage(name: AppRoutes.verifyOtp, page: () => const VerifyOtpView()),
+    GetPage(name: AppRoutes.admin, page: () => const AdminView()),
     // GetPage(
     //   name: AppRoutes.home, 
     //   page: () => const HomeView(),

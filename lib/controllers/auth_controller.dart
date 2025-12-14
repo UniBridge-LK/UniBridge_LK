@@ -42,23 +42,38 @@ class AuthController extends GetxController {
     _userModel.value = model;
     final verified = model?.isEmailVerified ?? false;
     if (verified) {
-      if (Get.currentRoute != AppRoutes.profile) {
-        Get.offAllNamed(AppRoutes.profile);
+      // Check if user is admin and route accordingly
+      final isAdmin = model?.role == 'admin';
+      if (isAdmin) {
+        if (Get.currentRoute != AppRoutes.admin) {
+          Get.offAllNamed(AppRoutes.admin);
+        }
+      } else {
+        if (Get.currentRoute != AppRoutes.profile) {
+          Get.offAllNamed(AppRoutes.profile);
+        }
       }
     } else {
       if (Get.currentRoute != AppRoutes.verifyOtp) {
-        Get.offAllNamed(AppRoutes.verifyOtp);
+          // Preserve previous page state; push OTP instead of replacing stack
+          Get.toNamed(AppRoutes.verifyOtp);
       }
     }
   }
   if (!_isinitialized.value) _isinitialized.value = true;
   }
 
-  void checkInitialAuthState(){
+  void checkInitialAuthState() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if(currentUser != null){
       _user.value = currentUser;
-      Get.offAllNamed(AppRoutes.profile);
+      final model = await _firestoreService.getUser(currentUser.uid);
+      _userModel.value = model;
+      if (model?.role == 'admin') {
+        Get.offAllNamed(AppRoutes.admin);
+      } else {
+        Get.offAllNamed(AppRoutes.profile);
+      }
     }else{
       Get.offAllNamed(AppRoutes.login);
     }
@@ -72,7 +87,11 @@ class AuthController extends GetxController {
       UserModel? userModel = await _authService.signInWithEmailAndPassword(email, password);
       if (userModel != null) {
         _userModel.value = userModel;
-        Get.offAllNamed(AppRoutes.profile);
+        if (userModel.role == 'admin') {
+          Get.offAllNamed(AppRoutes.admin);
+        } else {
+          Get.offAllNamed(AppRoutes.profile);
+        }
       }
     } catch (e) {
       _error.value = e.toString();
@@ -115,7 +134,8 @@ class AuthController extends GetxController {
             await OtpService().sendEmailOtp(userId: user.uid, email: user.email ?? email);
           } catch (_) {}
         }
-        Get.offAllNamed(AppRoutes.verifyOtp);
+        // Push OTP to keep register view in stack so back arrow preserves inputs
+        Get.toNamed(AppRoutes.verifyOtp);
       }
     } on FirebaseAuthException catch (e) {
       _error.value = e.code;

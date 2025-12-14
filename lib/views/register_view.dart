@@ -1,5 +1,6 @@
 import 'package:chat_with_aks/controllers/auth_controller.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -8,7 +9,13 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:get/get_utils/src/get_utils/get_utils.dart';
 
-enum AccountType { individual, organization }
+enum UserRole {
+  schoolStudent,
+  undergraduate,
+  academicStaff,
+  institution,
+  other,
+}
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -23,16 +30,43 @@ class _RegisterViewState extends State<RegisterView> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _displayNameController = TextEditingController();
-  final _universityController = TextEditingController();
-  final _facultyController = TextEditingController();
-  final _departmentController = TextEditingController();
-  final _organizationNameController = TextEditingController();
+  
+  // Controllers for custom "Others" input
+  final _customUniversityController = TextEditingController();
+  final _customFacultyController = TextEditingController();
+  final _customDepartmentController = TextEditingController();
 
   final AuthController _authController = Get.find<AuthController>();
+  final FirestoreService _firestoreService = FirestoreService();
+  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  int _currentStep = 0; // 0: Account Info, 1: Account Type, 2: Type Details
-  AccountType? _selectedAccountType;
+  int _currentStep = 0; // 0: Account Info, 1: Academic Details (conditional)
+  UserRole? _selectedRole;
+  
+  // Dropdown data
+  List<Map<String, dynamic>> _universities = [];
+  List<Map<String, dynamic>> _faculties = [];
+  List<Map<String, dynamic>> _departments = [];
+  
+  // Selected values
+  String? _selectedUniversityId;
+  String? _selectedFacultyId;
+  String? _selectedDepartmentId;
+  
+  // "Others" flags
+  bool _isUniversityOthers = false;
+  bool _isFacultyOthers = false;
+  bool _isDepartmentOthers = false;
+  
+  // Loading state
+  bool _isLoadingUniversities = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUniversities();
+  }
 
   @override
   void dispose() {
@@ -40,11 +74,66 @@ class _RegisterViewState extends State<RegisterView> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _displayNameController.dispose();
-    _universityController.dispose();
-    _facultyController.dispose();
-    _departmentController.dispose();
-    _organizationNameController.dispose();
+    _customUniversityController.dispose();
+    _customFacultyController.dispose();
+    _customDepartmentController.dispose();
     super.dispose();
+  }
+  
+  Future<void> _loadUniversities() async {
+    print('=== Starting to load universities ===');
+    setState(() {
+      _isLoadingUniversities = true;
+    });
+    try {
+      final unis = await _firestoreService.getUniversities();
+      print('=== Loaded ${unis.length} universities ===');
+      if (unis.isEmpty) {
+        print('WARNING: No universities found in Firestore!');
+        print('Please add universities through the Admin page first.');
+      } else {
+        for (var uni in unis) {
+          print('University: id=${uni['id']}, name=${uni['name']}');
+        }
+      }
+      setState(() {
+        _universities = unis;
+        _isLoadingUniversities = false;
+      });
+    } catch (e) {
+      print('=== ERROR loading universities: $e ===');
+      setState(() {
+        _isLoadingUniversities = false;
+      });
+    }
+  }
+  
+  Future<void> _loadFaculties(String universityId) async {
+    try {
+      final facs = await _firestoreService.getFacultiesByUniversity(universityId);
+      print('Loaded ${facs.length} faculties for university $universityId: $facs');
+      setState(() {
+        _faculties = facs;
+        _selectedFacultyId = null;
+        _departments = [];
+        _selectedDepartmentId = null;
+      });
+    } catch (e) {
+      print('Error loading faculties: $e');
+    }
+  }
+  
+  Future<void> _loadDepartments(String facultyId) async {
+    try {
+      final depts = await _firestoreService.getDepartmentsByFaculty(facultyId);
+      print('Loaded ${depts.length} departments for faculty $facultyId: $depts');
+      setState(() {
+        _departments = depts;
+        _selectedDepartmentId = null;
+      });
+    } catch (e) {
+      print('Error loading departments: $e');
+    }
   }
 
   @override
@@ -92,9 +181,7 @@ class _RegisterViewState extends State<RegisterView> {
               if (_currentStep == 0) ...[
                 _buildAccountInfoStep(context),
               ] else if (_currentStep == 1) ...[
-                _buildAccountTypeStep(context),
-              ] else if (_currentStep == 2) ...[
-                _buildTypeDetailsStep(context),
+                _buildAcademicDetailsStep(context),
               ],
 
               SizedBox(height: 24),
@@ -126,7 +213,7 @@ class _RegisterViewState extends State<RegisterView> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(_currentStep < 2 ? 'Next' : 'Register'),
+                            : Text(_primaryButtonLabel()),
                       ),
                     ),
                   ),
@@ -173,16 +260,35 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
+  bool get _requiresAcademicDetails =>
+      _selectedRole == UserRole.undergraduate || _selectedRole == UserRole.academicStaff;
+
+  int get _totalSteps => _requiresAcademicDetails ? 2 : 1;
+
+  String _primaryButtonLabel() {
+    if (_currentStep == 0 && _requiresAcademicDetails) return 'Next';
+    return 'Register';
+  }
+
   String _getStepTitle() {
-    switch (_currentStep) {
-      case 0:
-        return 'Step 1 of 3: Create your account';
-      case 1:
-        return 'Step 2 of 3: Select your account type';
-      case 2:
-        return 'Step 3 of 3: Complete your profile';
-      default:
-        return '';
+    if (_currentStep == 0) {
+      return 'Step 1 of $_totalSteps: Create your account';
+    }
+    return 'Step 2 of $_totalSteps: Academic details';
+  }
+
+  String _roleLabel(UserRole role) {
+    switch (role) {
+      case UserRole.schoolStudent:
+        return 'School Student';
+      case UserRole.undergraduate:
+        return 'Undergraduates';
+      case UserRole.academicStaff:
+        return 'Academic Staff';
+      case UserRole.institution:
+        return 'Institutions / Organizations';
+      case UserRole.other:
+        return 'Others';
     }
   }
 
@@ -298,220 +404,334 @@ class _RegisterViewState extends State<RegisterView> {
             return null;
           },
         ),
+        SizedBox(height: 16),
+        DropdownButtonFormField<UserRole>(
+          value: _selectedRole,
+          items: UserRole.values
+              .map(
+                (role) => DropdownMenuItem(
+                  value: role,
+                  child: Text(_roleLabel(role)),
+                ),
+              )
+              .toList(),
+          decoration: InputDecoration(
+            labelText: 'Select Role',
+            prefixIcon: Icon(Icons.assignment_ind_outlined),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onChanged: (role) {
+            setState(() {
+              _selectedRole = role;
+              _currentStep = 0; // Keep on first step when role changes
+            });
+          },
+          validator: (value) {
+            if (value == null) {
+              return 'Please select a role';
+            }
+            return null;
+          },
+        ),
       ],
     );
   }
-
-  Widget _buildAccountTypeStep(BuildContext context) {
+  Widget _buildAcademicDetailsStep(BuildContext context) {
     return Column(
       children: [
-        Text("What type of account are you creating?",
+        Text("Provide your academic details.",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.textSecondaryColor,
           ),
         ),
         SizedBox(height: 24),
-        _buildAccountTypeOption(
-          context,
-          AccountType.individual,
-          'Individual',
-          'Student or individual account',
-          Icons.person,
-        ),
-        SizedBox(height: 16),
-        _buildAccountTypeOption(
-          context,
-          AccountType.organization,
-          'Organization',
-          'Company or institution account',
-          Icons.business,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccountTypeOption(
-    BuildContext context,
-    AccountType type,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
-    final isSelected = _selectedAccountType == type;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedAccountType = type;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondaryColor),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: isSelected ? AppTheme.primaryColor : null,
-                      fontWeight: FontWeight.bold,
-                    ),
+        
+        // University Dropdown
+        _isLoadingUniversities
+          ? TextFormField(
+              enabled: false,
+              decoration: InputDecoration(
+                labelText: 'University',
+                hintText: 'Loading universities...',
+                prefixIcon: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+            )
+          : DropdownButtonFormField<String>(
+          value: _selectedUniversityId,
+          isExpanded: true,
+          items: [
+            ..._universities.map<DropdownMenuItem<String>>((uni) => DropdownMenuItem<String>(
+              value: uni['id'] as String,
+              child: Text(
+                uni['name'] ?? 'Unknown',
+                overflow: TextOverflow.ellipsis,
+              ),
+            )),
+            DropdownMenuItem<String>(
+              value: 'others',
+              child: Text('Others'),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: AppTheme.primaryColor),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeDetailsStep(BuildContext context) {
-    if (_selectedAccountType == AccountType.individual) {
-      return Column(
-        children: [
-          Text("Complete your educational profile.",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondaryColor,
+          decoration: InputDecoration(
+            labelText: 'University',
+            hintText: 'Select your university',
+            prefixIcon: Icon(Icons.school_outlined),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          SizedBox(height: 24),
+          onChanged: (value) {
+            setState(() {
+              _selectedUniversityId = value;
+              _isUniversityOthers = value == 'others';
+              if (value != null && value != 'others') {
+                _loadFaculties(value);
+              } else {
+                _faculties = [];
+                _selectedFacultyId = null;
+                _departments = [];
+                _selectedDepartmentId = null;
+              }
+            });
+          },
+          validator: (value) {
+            if (value == null) {
+              return 'Please select a university';
+            }
+            return null;
+          },
+        ),
+        
+        // Custom University TextField (shown when \"Others\" selected)
+        if (_isUniversityOthers) ...[
+          SizedBox(height: 16),
           TextFormField(
-            controller: _universityController,
+            controller: _customUniversityController,
             decoration: InputDecoration(
-              labelText: 'University Name',
-              hintText: 'Enter your university',
-              prefixIcon: Icon(Icons.school_outlined),
+              labelText: 'Enter University Name',
+              hintText: 'Type your university name',
+              prefixIcon: Icon(Icons.edit),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (_isUniversityOthers && (value == null || value.isEmpty)) {
                 return 'Please enter your university name';
               }
               return null;
             },
           ),
-          SizedBox(height: 16),
-          TextFormField(
-            controller: _facultyController,
-            decoration: InputDecoration(
-              labelText: 'Faculty',
-              hintText: 'Enter your faculty',
-              prefixIcon: Icon(Icons.category_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+        ],
+        
+        SizedBox(height: 16),
+        
+        // Faculty Dropdown
+        DropdownButtonFormField<String>(
+          value: _selectedFacultyId,
+          isExpanded: true,
+          items: [
+            ..._faculties.map<DropdownMenuItem<String>>((fac) => DropdownMenuItem<String>(
+              value: fac['id'] as String,
+              child: Text(
+                fac['name'] ?? 'Unknown',
+                overflow: TextOverflow.ellipsis,
               ),
+            )),
+            DropdownMenuItem<String>(
+              value: 'others',
+              child: Text('Others'),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your faculty';
-              }
-              return null;
-            },
+          ],
+          decoration: InputDecoration(
+            labelText: 'Faculty',
+            prefixIcon: Icon(Icons.category_outlined),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
+          onChanged: (value) {
+            setState(() {
+              _selectedFacultyId = value;
+              _isFacultyOthers = value == 'others';
+              if (value != null && value != 'others') {
+                _loadDepartments(value);
+              } else {
+                _departments = [];
+                _selectedDepartmentId = null;
+              }
+            });
+          },
+          validator: (value) {
+            if (value == null) {
+              return 'Please select a faculty';
+            }
+            return null;
+          },
+        ),
+        
+        // Custom Faculty TextField (shown when \"Others\" selected)
+        if (_isFacultyOthers) ...[
           SizedBox(height: 16),
           TextFormField(
-            controller: _departmentController,
+            controller: _customFacultyController,
             decoration: InputDecoration(
-              labelText: 'Department',
-              hintText: 'Enter your department',
-              prefixIcon: Icon(Icons.apartment_outlined),
+              labelText: 'Enter Faculty Name',
+              hintText: 'Type your faculty name',
+              prefixIcon: Icon(Icons.edit),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your department';
+              if (_isFacultyOthers && (value == null || value.isEmpty)) {
+                return 'Please enter your faculty name';
               }
               return null;
             },
           ),
         ],
-      );
-    } else {
-      return Column(
-        children: [
-          Text("Complete your organization profile.",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondaryColor,
+        
+        SizedBox(height: 16),
+        
+        // Department Dropdown
+        DropdownButtonFormField<String>(
+          value: _selectedDepartmentId,
+          isExpanded: true,
+          items: [
+            ..._departments.map<DropdownMenuItem<String>>((dept) => DropdownMenuItem<String>(
+              value: dept['id'] as String,
+              child: Text(
+                dept['name'] ?? 'Unknown',
+                overflow: TextOverflow.ellipsis,
+              ),
+            )),
+            DropdownMenuItem<String>(
+              value: 'others',
+              child: Text('Others'),
+            ),
+          ],
+          decoration: InputDecoration(
+            labelText: 'Department',
+            prefixIcon: Icon(Icons.apartment_outlined),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          SizedBox(height: 24),
+          onChanged: (value) {
+            setState(() {
+              _selectedDepartmentId = value;
+              _isDepartmentOthers = value == 'others';
+            });
+          },
+          validator: (value) {
+            if (value == null) {
+              return 'Please select a department';
+            }
+            return null;
+          },
+        ),
+        
+        // Custom Department TextField (shown when \"Others\" selected)
+        if (_isDepartmentOthers) ...[
+          SizedBox(height: 16),
           TextFormField(
-            controller: _organizationNameController,
+            controller: _customDepartmentController,
             decoration: InputDecoration(
-              labelText: 'Organization Name',
-              hintText: 'Enter your organization name',
-              prefixIcon: Icon(Icons.business_outlined),
+              labelText: 'Enter Department Name',
+              hintText: 'Type your department name',
+              prefixIcon: Icon(Icons.edit),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your organization name';
+              if (_isDepartmentOthers && (value == null || value.isEmpty)) {
+                return 'Please enter your department name';
               }
               return null;
             },
           ),
         ],
-      );
-    }
+      ],
+    );
   }
 
   void _handleNextOrRegister() {
-    // Validate current step
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Validate step-specific conditions
-    if (_currentStep == 1 && _selectedAccountType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select an account type')),
-      );
-      return;
-    }
-
-    if (_currentStep < 2) {
+    if (_currentStep == 0 && _requiresAcademicDetails) {
       setState(() {
-        _currentStep++;
+        _currentStep = 1;
       });
-    } else {
-      // Register
-      _authController.registerWithEmailAndPassword(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _displayNameController.text,
-        accountType: _selectedAccountType?.name ?? '',
-        universityName: _selectedAccountType == AccountType.individual ? _universityController.text.trim() : '',
-        faculty: _selectedAccountType == AccountType.individual ? _facultyController.text.trim() : '',
-        department: _selectedAccountType == AccountType.individual ? _departmentController.text.trim() : '',
-        organizationName: _selectedAccountType == AccountType.organization ? _organizationNameController.text.trim() : '',
-      );
+      return;
     }
+
+    _register();
+  }
+
+  void _register() {
+    // Get university, faculty, and department values (either from selection or custom input)
+    String universityValue = '';
+    String facultyValue = '';
+    String departmentValue = '';
+    
+    if (_requiresAcademicDetails) {
+      // University
+      if (_isUniversityOthers) {
+        universityValue = _customUniversityController.text.trim();
+      } else if (_selectedUniversityId != null) {
+        final selectedUni = _universities.firstWhere(
+          (uni) => uni['id'] == _selectedUniversityId,
+          orElse: () => {'name': ''},
+        );
+        universityValue = selectedUni['name'] ?? '';
+      }
+      
+      // Faculty
+      if (_isFacultyOthers) {
+        facultyValue = _customFacultyController.text.trim();
+      } else if (_selectedFacultyId != null) {
+        final selectedFac = _faculties.firstWhere(
+          (fac) => fac['id'] == _selectedFacultyId,
+          orElse: () => {'name': ''},
+        );
+        facultyValue = selectedFac['name'] ?? '';
+      }
+      
+      // Department
+      if (_isDepartmentOthers) {
+        departmentValue = _customDepartmentController.text.trim();
+      } else if (_selectedDepartmentId != null) {
+        final selectedDept = _departments.firstWhere(
+          (dept) => dept['id'] == _selectedDepartmentId,
+          orElse: () => {'name': ''},
+        );
+        departmentValue = selectedDept['name'] ?? '';
+      }
+    }
+    
+    _authController.registerWithEmailAndPassword(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _displayNameController.text,
+      accountType: _selectedRole != null ? _roleLabel(_selectedRole!) : '',
+      universityName: universityValue,
+      faculty: facultyValue,
+      department: departmentValue,
+      organizationName: '',
+    );
   }
 }

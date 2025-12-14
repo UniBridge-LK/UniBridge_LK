@@ -15,6 +15,7 @@ class UserModel {
   final String department;
   final String organizationName;
   final bool isEmailVerified;
+  final String role;
 
   UserModel({
     required this.id,
@@ -30,6 +31,7 @@ class UserModel {
     this.department = '',
     this.organizationName = '',
     this.isEmailVerified = false,
+    this.role = 'user',
   });
 
   Map<String, dynamic> toMap() {
@@ -47,6 +49,7 @@ class UserModel {
       'department': department,
       'organizationName': organizationName,
       'isEmailVerified': isEmailVerified,
+      'role': role,
     };
   }
 
@@ -78,6 +81,7 @@ class UserModel {
       department: map['department'] ?? '',
       organizationName: map['organizationName'] ?? '',
       isEmailVerified: map['isEmailVerified'] ?? false,
+      role: map['role'] ?? 'user',
     );
   }
 
@@ -95,6 +99,7 @@ class UserModel {
     String? department,
     String? organizationName,
     bool? isEmailVerified,
+    String? role,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -110,6 +115,7 @@ class UserModel {
       department: department ?? this.department,
       organizationName: organizationName ?? this.organizationName,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      role: role ?? this.role,
     );
   }
 }

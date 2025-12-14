@@ -3,6 +3,7 @@ import 'package:chat_with_aks/models/friend_request_model.dart';
 import 'package:chat_with_aks/models/friendship_model.dart';
 import 'package:chat_with_aks/models/message_model.dart';
 import 'package:chat_with_aks/models/notification_model.dart';
+import 'package:chat_with_aks/models/university_model.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -747,6 +748,121 @@ class FirestoreService {
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to delete notification by type and user: ${e.toString()}');
+    }
+  }
+
+  Future<String> addUniversity(String universityName) async {
+  try {
+    // 1. Create a reference to the 'universities' collection
+    final CollectionReference universities = _firestore.collection('universities');
+
+    // 2. Prepare the data
+    final University newUniversity = University(
+      id: '', // ID is temporary, Firestore will generate one
+      name: universityName,
+    );
+
+    // 3. Add the document to Firestore
+    DocumentReference docRef = await universities.add(newUniversity.toFirestore());
+
+    print('University added with ID: ${docRef.id}');
+    return docRef.id; // Return the generated ID for later use
+  } catch (e) {
+    print('Error adding university: $e');
+    rethrow;
+  }
+  }
+
+  Future<String> addFaculty(String facultyName, String universityId) async {
+  try {
+    final CollectionReference faculties = _firestore.collection('faculties');
+
+    final Faculty newFaculty = Faculty(
+      id: '',
+      name: facultyName,
+      universityId: universityId, // <-- The crucial linkage
+    );
+
+    DocumentReference docRef = await faculties.add(newFaculty.toFirestore());
+
+    print('Faculty added with ID: ${docRef.id}');
+    return docRef.id;
+  } catch (e) {
+    print('Error adding faculty: $e');
+    rethrow;
+  }
+}
+Future<void> addDepartment(String departmentName, String facultyId) async {
+  try {
+    final CollectionReference departments = _firestore.collection('departments');
+
+    final Department newDepartment = Department(
+      id: '',
+      name: departmentName,
+      facultyId: facultyId, // <-- The crucial linkage
+    );
+
+    await departments.add(newDepartment.toFirestore());
+    print('Department added successfully.');
+  } catch (e) {
+    print('Error adding department: $e');
+    rethrow;
+  }
+}
+
+  Future<List<Map<String, dynamic>>> getUniversities() async {
+    try {
+      final snapshot = await _firestore.collection('universities').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching universities: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getFacultiesByUniversity(String universityId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('faculties')
+          .where('universityId', isEqualTo: universityId)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+          'universityId': data['universityId'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching faculties: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getDepartmentsByFaculty(String facultyId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('departments')
+          .where('facultyId', isEqualTo: facultyId)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+          'facultyId': data['facultyId'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching departments: $e');
+      rethrow;
     }
   }
 }
