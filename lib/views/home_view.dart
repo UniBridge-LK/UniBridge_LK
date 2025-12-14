@@ -49,58 +49,69 @@ class HomeView extends GetView<HomeController> {
                   gradient: LinearGradient(colors: [Color(0xFF6C5CE7), Color(0xFF7F5CD1)]),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                padding: EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Global Forum', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 8),
-                        Text('View global discussions and join threads across universities', style: TextStyle(color: Colors.white70)),
-                      ]),
+                    Row(
+                      children: [
+                        Icon(Icons.forum_outlined, color: Colors.white, size: 24),
+                        SizedBox(width: 8),
+                        Text('Global Forum', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      ],
                     ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Discuss degrees, career paths, and questions common to all universities.',
+                      style: TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                    ),
+                    SizedBox(height: 16),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryColor),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primaryColor,
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                       onPressed: (){
                         // switch to forum tab
                         mainController.setIndex(2);
                         // ensure main route
                         if(Get.currentRoute != AppRoutes.main) Get.offAllNamed(AppRoutes.main);
                       },
-                      child: Text('View Global Threads'),
+                      child: Text('View Global Threads', style: TextStyle(fontWeight: FontWeight.w600)),
                     )
                   ],
                 ),
               ),
             ),
 
-            // Header
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+            // Browse Universities Header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Home - Directory',
+                    'Browse Universities',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryColor,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
                   Text(
-                    'Browse Universities',
+                    'Find threads related to specific Universities, Faculties, and Departments.',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      fontSize: 14,
+                      color: Colors.grey[700],
                     ),
                   ),
                 ],
               ),
             ),
+            SizedBox(height: 8),
 
             // Universities List
             Padding(
@@ -129,8 +140,20 @@ class HomeView extends GetView<HomeController> {
                           ),
                           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              Container(
+                                padding: EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.account_balance,
+                                  color: Colors.grey[600],
+                                  size: 24,
+                                ),
+                              ),
+                              SizedBox(width: 16),
                               Expanded(
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                   Text(
@@ -142,13 +165,13 @@ class HomeView extends GetView<HomeController> {
                                     ),
                                   ),
                                   SizedBox(height:4),
-                                  Text('${faculties.length} faculties', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  Text('${faculties.length} Faculties Listed', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                                 ]),
                               ),
                               Icon(
-                                Icons.arrow_forward_ios,
-                                color: AppTheme.primaryColor,
-                                size: 20,
+                                Icons.chevron_right,
+                                color: Colors.grey[400],
+                                size: 28,
                               ),
                             ],
                           ),

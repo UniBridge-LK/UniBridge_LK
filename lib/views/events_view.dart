@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/models/mock_data.dart';
+import 'package:chat_with_aks/models/dummy_events.dart';
+import 'package:chat_with_aks/views/event_details_view.dart';
+import 'package:chat_with_aks/views/add_event_view.dart';
 import 'package:get/get.dart';
 
 class EventsView extends StatelessWidget {
   const EventsView({super.key});
+
+  bool isPremiumUser() {
+    // Simple premium check
+    return false; // For now, assume non-premium
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,73 +21,194 @@ class EventsView extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.primaryColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => Get.dialog(const Padding(padding: EdgeInsets.all(24), child: Center(child: SizedBox(width: 320, child: Card(child: Padding(padding: EdgeInsets.all(16), child: Text('New Event creation (mock)'))))))),
-            icon: Icon(Icons.add, color: Colors.white),
-            color: Colors.indigo,
-            tooltip: 'New Event',
-          )
-        ],
+        automaticallyImplyLeading: false,
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: mockEvents.length,
-        itemBuilder: (c,i) {
-          final e = mockEvents[i];
-          final date = DateTime.now();
-          final day = date.day.toString();
-          final month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][date.month-1];
-
-          return Card(
-            margin: EdgeInsets.only(bottom:12),
-            child: Row(
-              children: [
-                // Date block
-                Container(
-                  width:72,
-                  padding: EdgeInsets.symmetric(vertical:12),
-                  decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.only(topLeft: Radius.circular(4), bottomLeft: Radius.circular(4))),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (isPremiumUser()) {
+            Get.to(() => AddEventView());
+          } else {
+            // Show premium popup
+            Get.dialog(
+              Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: EdgeInsets.all(24),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(day, style: TextStyle(fontSize:20, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                      SizedBox(height:4),
-                      Text(month, style: TextStyle(color: Colors.indigo)),
+                      Icon(Icons.workspace_premium, color: Colors.amber, size: 56),
+                      SizedBox(height: 16),
+                      Text('Unlock Premium',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 12),
+                      Text(
+                        'Access features like Chat Initiation, Event Creation, and unlimited connections with the community (Staff, Students, Alumni).',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Get.back();
+                            Get.snackbar('Premium', 'Redirecting to payment (mock)');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          ),
+                          child: Text('Buy Premium - LKR 500/mo', style: TextStyle(fontSize: 16)),
+                        ),
+                      )
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
+              ),
+            );
+          }
+        },
+        backgroundColor: AppTheme.primaryColor,
+        child: Icon(Icons.add, color: Colors.white),
+      ),
+      body: ListView.builder(
+        padding: EdgeInsets.all(16),
+        itemCount: dummyEvents.length,
+        itemBuilder: (context, index) {
+          final event = dummyEvents[index];
+
+          return Container(
+            margin: EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: Colors.teal.shade600, width: 4)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Card(
+              elevation: 2,
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Title & Category
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(child: Text(e.title, style: TextStyle(fontSize:16, fontWeight: FontWeight.w700))),
-                            Container(padding: EdgeInsets.symmetric(horizontal:8, vertical:4), decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)), child: Text('Meetup', style: TextStyle(fontSize:12)))
-                          ],
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        SizedBox(height:8),
-                        Row(children: [Icon(Icons.access_time, size:16, color: Colors.grey), SizedBox(width:6), Text(e.time)],),
-                        SizedBox(height:6),
-                        Row(children: [Icon(Icons.place, size:16, color: Colors.grey), SizedBox(width:6), Text(e.loc)],),
-                        SizedBox(height:6),
-                        Row(children: [Icon(Icons.group, size:16, color: Colors.grey), SizedBox(width:6), Text('12 going')],),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            event.category,
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                    SizedBox(height: 12),
+
+                    // Date, Time, Location
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(event.date, style: TextStyle(fontSize: 13, color: Colors.grey)),
+                        SizedBox(width: 16),
+                        Icon(Icons.access_time, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(event.time, style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+
+                    // Hosted By
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text('Hosted by: ', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        GestureDetector(
+                          onTap: () {
+                            Get.snackbar(
+                              'Profile',
+                              'View ${event.hostName} profile',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          },
+                          child: Text(
+                            event.hostName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+
+                    // Attendees
+                    Row(
+                      children: [
+                        Icon(Icons.group, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          '${event.attendeeCount} attending',
+                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // View Details Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailsView(event: event),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: Text('View Details'),
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.all(12),
-                  child: ElevatedButton(
-                    onPressed: () { Get.snackbar('RSVP', 'You are marked as attending (mock)'); },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-                    child: Text('RSVP'),
-                  ),
-                )
-              ],
+              ),
             ),
           );
         },
@@ -88,4 +216,5 @@ class EventsView extends StatelessWidget {
     );
   }
 }
+
  

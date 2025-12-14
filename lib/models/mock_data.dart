@@ -15,8 +15,38 @@ final universityStructure = {
 };
 
 final mockEvents = [
-  EventModel(id: 'e1', title: 'AI & Robotics Workshop', time: 'Oct 12, 10 AM', loc: 'UoM IT Fac.', host: 'AI Club'),
-  EventModel(id: 'e2', title: 'Medical Career Seminar', time: 'Nov 05, 2 PM', loc: 'UoC Hall', host: 'Med Students'),
+  EventModel(
+    id: 'e1',
+    title: 'AI & Robotics Workshop',
+    date: 'Oct 12, 2024',
+    time: '10:00 AM',
+    location: 'UoM IT Fac.',
+    host: 'AI Club',
+    hostId: 'u1',
+    hostName: 'Ahmed Hassan',
+    hostAvatar: 'A',
+    description: 'Workshop on AI and Robotics',
+    category: 'Workshop',
+    attendeeCount: 12,
+    attendees: [],
+    imageUrl: '',
+  ),
+  EventModel(
+    id: 'e2',
+    title: 'Medical Career Seminar',
+    date: 'Nov 05, 2024',
+    time: '2:00 PM',
+    location: 'UoC Hall',
+    host: 'Med Students',
+    hostId: 'u2',
+    hostName: 'Dr. Priya Sharma',
+    hostAvatar: 'P',
+    description: 'Career opportunities in medicine',
+    category: 'Seminar',
+    attendeeCount: 28,
+    attendees: [],
+    imageUrl: '',
+  ),
 ];
 
 final mockGlobalThreads = [
