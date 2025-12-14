@@ -171,7 +171,7 @@ class _AdminViewState extends State<AdminView> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedUniversityId,
+                  initialValue: _selectedUniversityId,
                   items: _universities
                       .map<DropdownMenuItem<String>>((uni) => DropdownMenuItem<String>(
                         value: uni['id'] as String,
@@ -250,7 +250,7 @@ class _AdminViewState extends State<AdminView> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedUniversityId,
+                  initialValue: _selectedUniversityId,
                   items: _universities
                       .map<DropdownMenuItem<String>>((uni) => DropdownMenuItem<String>(
                         value: uni['id'] as String,
@@ -281,7 +281,7 @@ class _AdminViewState extends State<AdminView> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedFacultyId,
+                  initialValue: _selectedFacultyId,
                   items: _faculties
                       .map<DropdownMenuItem<String>>((fac) => DropdownMenuItem<String>(
                         value: fac['id'] as String,

@@ -1,13 +1,13 @@
+import 'dart:core';
+
 import 'package:chat_with_aks/controllers/auth_controller.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/services/firestore_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class ProfileController extends GetxController {
   
@@ -102,6 +102,7 @@ class ProfileController extends GetxController {
     }catch(e){
       _error.value = e.toString();
       print(e.toString());
+      debugPrint(e.toString());
       Get.snackbar('Error',"Failed to update profile");
     } finally{
       _isLoading.value = false;
@@ -113,6 +114,34 @@ class ProfileController extends GetxController {
       await _authController.signOut();      
     } catch (e) {
       Get.snackbar('Error', 'Failed to sign out');
+    }
+  }
+
+  Future<void> uploadPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024);
+      if (file == null) return;
+      _isLoading.value = true;
+
+      final user = _currentUser.value;
+      if (user == null) {
+        Get.snackbar('Error', 'No user loaded');
+        return;
+      }
+
+      final storageRef = FirebaseStorage.instance.ref().child('user_photos').child('${user.id}.jpg');
+      final uploadTask = storageRef.putData(await file.readAsBytes());
+      final snapshot = await uploadTask;
+      final url = await snapshot.ref.getDownloadURL();
+
+      final updatedUser = user.copyWith(photoURL: url);
+      await _firestoreService.UpdateUser(updatedUser);
+      Get.snackbar('Success', 'Profile photo updated');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to upload photo');
+    } finally {
+      _isLoading.value = false;
     }
   }
 

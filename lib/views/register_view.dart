@@ -406,7 +406,7 @@ class _RegisterViewState extends State<RegisterView> {
         ),
         SizedBox(height: 16),
         DropdownButtonFormField<UserRole>(
-          value: _selectedRole,
+          initialValue: _selectedRole,
           items: UserRole.values
               .map(
                 (role) => DropdownMenuItem(
@@ -469,7 +469,7 @@ class _RegisterViewState extends State<RegisterView> {
               ),
             )
           : DropdownButtonFormField<String>(
-          value: _selectedUniversityId,
+          initialValue: _selectedUniversityId,
           isExpanded: true,
           items: [
             ..._universities.map<DropdownMenuItem<String>>((uni) => DropdownMenuItem<String>(
@@ -540,7 +540,7 @@ class _RegisterViewState extends State<RegisterView> {
         
         // Faculty Dropdown
         DropdownButtonFormField<String>(
-          value: _selectedFacultyId,
+          initialValue: _selectedFacultyId,
           isExpanded: true,
           items: [
             ..._faculties.map<DropdownMenuItem<String>>((fac) => DropdownMenuItem<String>(
@@ -608,7 +608,7 @@ class _RegisterViewState extends State<RegisterView> {
         
         // Department Dropdown
         DropdownButtonFormField<String>(
-          value: _selectedDepartmentId,
+          initialValue: _selectedDepartmentId,
           isExpanded: true,
           items: [
             ..._departments.map<DropdownMenuItem<String>>((dept) => DropdownMenuItem<String>(

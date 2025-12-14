@@ -1,7 +1,6 @@
 import 'package:chat_with_aks/controllers/change_password_controller.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';

@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
-import 'package:firebase_auth/firebase_auth.dart';
 
 class UserModel {
   final String id;
@@ -16,6 +15,11 @@ class UserModel {
   final String organizationName;
   final bool isEmailVerified;
   final String role;
+  final String theme;
+  final bool notificationsEnabled;
+  final String? bio;
+  final List<String>? interests;
+  
 
   UserModel({
     required this.id,
@@ -32,6 +36,11 @@ class UserModel {
     this.organizationName = '',
     this.isEmailVerified = false,
     this.role = 'user',
+    this.theme = 'light',
+    this.notificationsEnabled = true,
+    this.bio,
+    this.interests,
+    
   });
 
   Map<String, dynamic> toMap() {
@@ -50,6 +59,10 @@ class UserModel {
       'organizationName': organizationName,
       'isEmailVerified': isEmailVerified,
       'role': role,
+      'theme': theme,
+      'notificationsEnabled': notificationsEnabled,
+      'bio': bio,
+      'interests': interests,      
     };
   }
 
@@ -82,6 +95,11 @@ class UserModel {
       organizationName: map['organizationName'] ?? '',
       isEmailVerified: map['isEmailVerified'] ?? false,
       role: map['role'] ?? 'user',
+      theme: map['theme'] ?? 'light',
+      notificationsEnabled: map['notificationsEnabled'] ?? true,
+      bio: map['bio'] as String?,
+      interests: map['interests'] is List ? List<String>.from(map['interests']) : null,
+      
     );
   }
 
@@ -100,6 +118,10 @@ class UserModel {
     String? organizationName,
     bool? isEmailVerified,
     String? role,
+    String? theme,
+    bool? notificationsEnabled,
+    String? bio,
+    List<String>? interests,    
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -116,6 +138,10 @@ class UserModel {
       organizationName: organizationName ?? this.organizationName,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       role: role ?? this.role,
+      theme: theme ?? this.theme,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      bio: bio ?? this.bio,
+      interests: interests ?? this.interests,      
     );
   }
 }

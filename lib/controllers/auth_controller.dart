@@ -3,14 +3,14 @@ import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chat_with_aks/services/otp_service.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
+// removed unused import
+import 'package:flutter/foundation.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
-  final FirestoreService _firestoreService = FirestoreService();
+  final FirestoreService _firestoreService = FirestoreService();  
   final Rx<User?> _user = Rx<User?>(null);
   final Rx<UserModel?> _userModel = Rx<UserModel?>(null);
   final RxBool _isLoading = false.obs;
@@ -49,8 +49,8 @@ class AuthController extends GetxController {
           Get.offAllNamed(AppRoutes.admin);
         }
       } else {
-        if (Get.currentRoute != AppRoutes.profile) {
-          Get.offAllNamed(AppRoutes.profile);
+        if (Get.currentRoute != AppRoutes.main) {
+          Get.offAllNamed(AppRoutes.main);
         }
       }
     } else {
@@ -72,7 +72,7 @@ class AuthController extends GetxController {
       if (model?.role == 'admin') {
         Get.offAllNamed(AppRoutes.admin);
       } else {
-        Get.offAllNamed(AppRoutes.profile);
+        Get.offAllNamed(AppRoutes.main);
       }
     }else{
       Get.offAllNamed(AppRoutes.login);
@@ -90,13 +90,14 @@ class AuthController extends GetxController {
         if (userModel.role == 'admin') {
           Get.offAllNamed(AppRoutes.admin);
         } else {
-          Get.offAllNamed(AppRoutes.profile);
+          Get.offAllNamed(AppRoutes.main);
         }
       }
     } catch (e) {
       _error.value = e.toString();
       Get.snackbar('Error', 'Failed to Login');
       print(e);
+      debugPrint(e.toString());
     } finally {
       _isLoading.value = false;
     }
@@ -161,6 +162,7 @@ class AuthController extends GetxController {
       _error.value = e.toString();
       Get.snackbar('Error', 'Failed to Sign Out');
       print(e);
+      debugPrint(e.toString());
     } finally {
       _isLoading.value = false;
     }
@@ -176,6 +178,7 @@ class AuthController extends GetxController {
       _error.value = e.toString();
       Get.snackbar('Error', 'Failed to Delete Account');
       print(e);
+      debugPrint(e.toString());
     } finally {
       _isLoading.value = false;
     }
@@ -209,4 +212,5 @@ class AuthController extends GetxController {
   }
 
 }
+
 

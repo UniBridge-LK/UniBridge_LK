@@ -11,6 +11,7 @@ class AppRoutes {
   static const String admin = '/admin';
   static const String verifyOtp = '/verify-otp';
   static const String chat = '/chat';
+  static const String forum = '/forum';
   static const String usersList = '/users-list';
   static const String friends = '/friends';
   static const String friendRequests = '/friend-requests';

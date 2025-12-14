@@ -7,6 +7,10 @@ import 'package:chat_with_aks/models/university_model.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:chat_with_aks/models/user_model.dart';
+import 'package:chat_with_aks/models/thread_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+// firebase_core import removed (not required here)
 
 class FirestoreService {
   // Firestore related methods would be here
@@ -281,7 +285,7 @@ class FirestoreService {
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           userId: userId2,
           title: 'Friend Removed',
-          body: '${userId1} has removed you from their friends list',
+          body: '$userId1 has removed you from their friends list',
           type: NotificationType.friendRemoved,
           data: {
             'userId1': userId1,
@@ -339,7 +343,7 @@ class FirestoreService {
       List<FriendshipModel> friendships = [];
 
       for (var doc in snapshot1.docs) {
-        friendships.add(FriendshipModel.fromMap(doc.data() as Map<String, dynamic>));
+        friendships.add(FriendshipModel.fromMap(doc.data()));
       }
       for (var doc in snapshot2.docs) {
         friendships.add(FriendshipModel.fromMap(doc.data() as Map<String, dynamic>));
@@ -445,6 +449,67 @@ class FirestoreService {
       .where((chat) => chat.deletedBy[userId] != true)
       .toList()
     );
+  }  
+
+  Future<String> createThread(ThreadModel thread, {required String appId}) async {
+    try {
+      final data = thread.toMap();
+      data.remove('id');
+      final docRef = await _firestore
+        .collection('artifacts')
+        .doc(appId)
+        .collection('public')
+        .doc('data')
+        .collection('forumPosts')
+        .add(data);
+      await docRef.update({'id': docRef.id});
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Failed to create thread: ${e.toString()}');
+    }
+  }
+
+  Future<void> editThread(String threadId, Map<String, dynamic> updates, {required String appId}) async {
+    try {
+      await _firestore
+        .collection('artifacts')
+        .doc(appId)
+        .collection('public')
+        .doc('data')
+        .collection('forumPosts')
+        .doc(threadId)
+        .update(updates);
+    } catch (e) {
+      throw Exception('Failed to edit thread: ${e.toString()}');
+    }
+  }
+
+  Future<void> deleteThread(String threadId, {required String appId}) async {
+    try {
+      await _firestore
+        .collection('artifacts')
+        .doc(appId)
+        .collection('public')
+        .doc('data')
+        .collection('forumPosts')
+        .doc(threadId)
+        .delete();
+    } catch (e) {
+      throw Exception('Failed to delete thread: ${e.toString()}');
+    }
+  }
+
+  Stream<List<ThreadModel>> getThreadsStream({required String appId}) {
+    return _firestore
+      .collection('artifacts')
+      .doc(appId)
+      .collection('public')
+      .doc('data')
+      .collection('forumPosts')
+      .snapshots()
+      .map((snapshot) =>
+        snapshot.docs.map((doc) => ThreadModel.fromMap(doc.data())).toList()
+      );
   }
 
   Future<void> updateChatLastMessage(String chatId, MessageModel message) async {

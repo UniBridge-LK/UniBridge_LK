@@ -1,7 +1,6 @@
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -43,6 +42,7 @@ class AuthService {
       String department = '',
       String organizationName = '',
     }
+    
     ) async {
       try {
         UserCredential result = await _auth.createUserWithEmailAndPassword(
@@ -66,7 +66,8 @@ class AuthService {
             department: department,
             organizationName: organizationName,
           );
-          // Do NOT save to Firestore yet - wait for OTP verification
+          // Do NOT save to Firestore yet - wait for OTP verification          
+          await _firestoreService.createUser(userModel);
           return userModel;
         }
         return null; 

@@ -7,12 +7,21 @@ import 'package:chat_with_aks/views/profile_view.dart';
 import 'package:chat_with_aks/views/register_view.dart';
 import 'package:chat_with_aks/views/verify_otp_view.dart';
 import 'package:chat_with_aks/views/splash_view.dart';
-import 'package:get/get_navigation/get_navigation.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:get/instance_manager.dart';
-import 'package:get/state_manager.dart';
 import 'package:get/get.dart';
-import 'package:get/get_instance/get_instance.dart';
+import 'package:chat_with_aks/controllers/home_controller.dart';
+import 'package:chat_with_aks/controllers/forum_controller.dart';
+import 'package:chat_with_aks/views/home_view.dart';
+import 'package:chat_with_aks/views/forum_view.dart';
+import 'package:chat_with_aks/views/people_view.dart';
+import 'package:chat_with_aks/views/events_view.dart';
+import 'package:chat_with_aks/views/chats_view.dart';
+import 'package:chat_with_aks/views/main_view.dart';
+import 'package:chat_with_aks/controllers/main_controller.dart';
+import 'package:chat_with_aks/views/home_hierarchy/university_view.dart';
+import 'package:chat_with_aks/views/home_hierarchy/faculty_view.dart';
+import 'package:chat_with_aks/views/home_hierarchy/department_view.dart';
+
 
 
 class AppPages {
@@ -43,8 +52,47 @@ class AppPages {
     //   })
     //   ),
     GetPage(
+      name: AppRoutes.home, 
+      page: () => const HomeView(),
+      binding: BindingsBuilder(() {
+        // Dependency injections for HomeView
+        Get.put(HomeController());
+      })
+      ),
+    GetPage(
+      name: '/home/university',
+      page: () => UniversityView(uniName: Get.arguments['uni'], faculties: Map<String, List<String>>.from(Get.arguments['faculties'] ?? {})),
+    ),
+    GetPage(
+      name: '/home/university/faculty',
+      page: () => FacultyView(),
+    ),
+    GetPage(
+      name: '/home/university/faculty/department',
+      page: () => DepartmentView(),
+    ),
+    GetPage(
+      name: AppRoutes.forum,
+      page: () => const ForumView(),
+      binding: BindingsBuilder(() {
+        Get.put(ForumController());
+      }),
+    ),
+    GetPage(name: AppRoutes.usersList, page: () => const PeopleView()),
+    GetPage(name: AppRoutes.chat, page: () => const ChatsView()),
+    GetPage(name: AppRoutes.notifications, page: () => const EventsView()),
+    GetPage(
+      name: AppRoutes.main,
+      page: () => const MainView(),
+      binding: BindingsBuilder(() {
+        Get.put(MainController());
+        // Ensure HomeController is available for the HomeView inside MainView
+        Get.put(HomeController());
+      }),
+    ),
+    GetPage(
       name: AppRoutes.profile, 
-      page: () => const ProfileView(),
+      page: () => ProfileView(),
       binding: BindingsBuilder(() {
         // Dependency injections for ProfileView
         Get.put(ProfileController());
