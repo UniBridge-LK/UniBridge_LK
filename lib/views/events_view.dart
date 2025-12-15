@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/models/dummy_events.dart';
 import 'package:chat_with_aks/views/event_details_view.dart';
 import 'package:chat_with_aks/views/add_event_view.dart';
+import 'package:chat_with_aks/controllers/events_controller.dart';
 import 'package:get/get.dart';
 
 class EventsView extends StatelessWidget {
@@ -25,59 +25,101 @@ class EventsView extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          if (isPremiumUser()) {
-            Get.to(() => AddEventView());
-          } else {
-            // Show premium popup
-            Get.dialog(
-              Dialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.workspace_premium, color: Colors.amber, size: 56),
-                      SizedBox(height: 16),
-                      Text('Unlock Premium',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 12),
-                      Text(
-                        'Access features like Chat Initiation, Event Creation, and unlimited connections with the community (Staff, Students, Alumni).',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                      SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Get.back();
-                            Get.snackbar('Premium', 'Redirecting to payment (mock)');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          ),
-                          child: Text('Buy Premium - LKR 500/mo', style: TextStyle(fontSize: 16)),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
+          Get.to(() => AddEventView());
+          // if (isPremiumUser()) {
+          //   Get.to(() => AddEventView());
+          // } else {
+          //   // Show premium popup
+          //   Get.dialog(
+          //     Dialog(
+          //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          //       child: Padding(
+          //         padding: EdgeInsets.all(24),
+          //         child: Column(
+          //           mainAxisSize: MainAxisSize.min,
+          //           children: [
+          //             Icon(Icons.workspace_premium, color: Colors.amber, size: 56),
+          //             SizedBox(height: 16),
+          //             Text('Unlock Premium',
+          //                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          //             SizedBox(height: 12),
+          //             Text(
+          //               'Access features like Chat Initiation, Event Creation, and unlimited connections with the community (Staff, Students, Alumni).',
+          //               textAlign: TextAlign.center,
+          //               style: TextStyle(color: Colors.grey[700]),
+          //             ),
+          //             SizedBox(height: 20),
+          //             SizedBox(
+          //               width: double.infinity,
+          //               height: 48,
+          //               child: ElevatedButton(
+          //                 onPressed: () {
+          //                   Get.back();
+          //                   Get.snackbar('Premium', 'Redirecting to payment (mock)');
+          //                 },
+          //                 style: ElevatedButton.styleFrom(
+          //                   backgroundColor: Colors.orange,
+          //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          //                 ),
+          //                 child: Text('Buy Premium - LKR 500/mo', style: TextStyle(fontSize: 16)),
+          //               ),
+          //             )
+          //           ],
+          //         ),
+          //       ),
+          //     ),
+          //   );
+          // }
         },
         backgroundColor: AppTheme.primaryColor,
         child: Icon(Icons.add, color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: dummyEvents.length,
-        itemBuilder: (context, index) {
-          final event = dummyEvents[index];
+      body: GetBuilder<EventsController>(
+        init: EventsController(),
+        builder: (controller) {
+          return Obx(() {
+            if (controller.isLoading) {
+              return Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              );
+            }
+
+            if (controller.error.isNotEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    SizedBox(height: 16),
+                    Text('Error loading events'),
+                    SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: controller.refreshEvents,
+                      child: Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (controller.events.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.event_note, color: Colors.grey, size: 48),
+                    SizedBox(height: 16),
+                    Text('No events available'),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: controller.events.length,
+              itemBuilder: (context, index) {
+                final event = controller.events[index];
 
           return Container(
             margin: EdgeInsets.only(bottom: 16),
@@ -133,11 +175,19 @@ class EventsView extends StatelessWidget {
                     SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 16, color: Colors.grey),
+                        Icon(
+                          event.eventType == 'Online' 
+                            ? Icons.video_call 
+                            : Icons.location_on,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            event.location,
+                            event.eventType == 'Online'
+                              ? (event.platform ?? 'Online Event')
+                              : event.location,
                             style: TextStyle(fontSize: 13, color: Colors.grey),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -153,39 +203,29 @@ class EventsView extends StatelessWidget {
                         Icon(Icons.person, size: 16, color: Colors.grey),
                         SizedBox(width: 8),
                         Text('Hosted by: ', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        GestureDetector(
-                          onTap: () {
-                            Get.snackbar(
-                              'Profile',
-                              'View ${event.hostName} profile',
-                              snackPosition: SnackPosition.BOTTOM,
-                            );
-                          },
-                          child: Text(
-                            event.hostName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Get.snackbar(
+                                'Profile',
+                                'View ${event.host} profile',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            },
+                            child: Text(
+                              event.host,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 12),
-
-                    // Attendees
-                    Row(
-                      children: [
-                        Icon(Icons.group, size: 16, color: Colors.grey),
-                        SizedBox(width: 8),
-                        Text(
-                          '${event.attendeeCount} attending',
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),                   
 
                     // View Details Button
                     SizedBox(
@@ -211,10 +251,12 @@ class EventsView extends StatelessWidget {
               ),
             ),
           );
+              },
+            );
+            },
+          );
         },
       ),
     );
   }
 }
-
- 

@@ -13,6 +13,8 @@ class EventModel {
   final int attendeeCount; // Number of attendees
   final List<String> attendees; // List of attendee IDs
   final String imageUrl; // Event image
+  final String eventType; // "Physical" or "Online"
+  final String? platform; // e.g., "Zoom", "Google Meet" (for online events)
 
   EventModel({
     required this.id,
@@ -29,5 +31,7 @@ class EventModel {
     required this.attendeeCount,
     required this.attendees,
     required this.imageUrl,
+    required this.eventType,
+    this.platform,
   });
 }

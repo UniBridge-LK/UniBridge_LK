@@ -21,6 +21,7 @@ import 'package:chat_with_aks/controllers/main_controller.dart';
 import 'package:chat_with_aks/views/home_hierarchy/university_view.dart';
 import 'package:chat_with_aks/views/home_hierarchy/faculty_view.dart';
 import 'package:chat_with_aks/views/home_hierarchy/department_view.dart';
+import 'package:chat_with_aks/views/user_profile_view.dart';
 
 
 
@@ -79,6 +80,7 @@ class AppPages {
       }),
     ),
     GetPage(name: AppRoutes.usersList, page: () => const PeopleView()),
+    GetPage(name: '/user-profile', page: () => const UserProfileView()),
     GetPage(name: AppRoutes.chat, page: () => const ChatsView()),
     GetPage(name: AppRoutes.notifications, page: () => const EventsView()),
     GetPage(

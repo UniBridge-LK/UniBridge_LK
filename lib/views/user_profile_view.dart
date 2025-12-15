@@ -1,15 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/models/people_data.dart';
+import 'package:chat_with_aks/models/user_model.dart';
 import 'package:get/get.dart';
 
 class UserProfileView extends StatelessWidget {
-  final PersonData person;
+  final PersonData? person;
 
-  const UserProfileView({super.key, required this.person});
+  const UserProfileView({super.key, this.person});
 
   @override
   Widget build(BuildContext context) {
+    // Get the user from arguments if passed
+    final UserModel? selectedUser = Get.arguments is UserModel ? Get.arguments as UserModel : null;
+    final displayPerson = person;
+    
+    debugPrint('UserProfileView - selectedUser: ${selectedUser?.displayName}, displayPerson: ${displayPerson?.name}, Get.arguments: ${Get.arguments}');
+    
+    // If no person/user, show error
+    if (displayPerson == null && selectedUser == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text('Profile')),
+        body: Center(child: Text('User not found')),
+      );
+    }
+
+    // Build display data
+    final String displayName = selectedUser?.displayName ?? displayPerson?.name ?? 'User';
+    final String? photoUrl = selectedUser?.photoURL ?? displayPerson?.photoUrl;
+    final String university = selectedUser?.universityName ?? displayPerson?.university ?? 'N/A';
+    final String? faculty = selectedUser?.faculty ?? displayPerson?.faculty;
+    final String? department = selectedUser?.department ?? displayPerson?.department;
+    final String accountType = selectedUser?.accountType ?? displayPerson?.userType ?? '';
+    final String headline = selectedUser?.bio ?? displayPerson?.profileHeadline ?? '';
+    final String about = selectedUser?.bio ?? displayPerson?.about ?? '';
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Column(
@@ -57,20 +82,29 @@ class UserProfileView extends StatelessWidget {
                       child: Column(
                         children: [
                           // Profile photo
-                          person.photoUrl != null
+                          photoUrl != null && photoUrl.isNotEmpty
                               ? ClipOval(
                                   child: Image.network(
-                                    person.photoUrl!,
+                                    photoUrl,
                                     width: 96,
                                     height: 96,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return CircleAvatar(
+                                        radius: 48,
+                                        backgroundColor: Colors.grey[300],
+                                        child: Icon(Icons.person, size: 48),
+                                      );
+                                    },
                                   ),
                                 )
                               : CircleAvatar(
                                   radius: 48,
-                                  backgroundColor: Color(int.parse('0xFF${person.avatarColor}')),
+                                  backgroundColor: Color(int.parse(
+                                    '0xFF${displayPerson?.avatarColor ?? "E8F5E9"}',
+                                  )),
                                   child: Text(
-                                    person.avatarLetter,
+                                    displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
                                     style: TextStyle(
                                       fontSize: 36,
                                       color: AppTheme.primaryColor,
@@ -81,7 +115,7 @@ class UserProfileView extends StatelessWidget {
                           SizedBox(height: 16),
                           // Name
                           Text(
-                            person.name,
+                            displayName,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -89,121 +123,145 @@ class UserProfileView extends StatelessWidget {
                           ),
                           SizedBox(height: 6),
                           // Profile Headline
-                          Text(
-                            person.profileHeadline,
-                            style: TextStyle(color: Colors.grey[600]),
-                            textAlign: TextAlign.center,
-                          ),
+                          if (headline.isNotEmpty)
+                            Text(
+                              headline,
+                              style: TextStyle(color: Colors.grey[600]),
+                              textAlign: TextAlign.center,
+                            ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  
+                  // About section (only if bio is present)
+                  if (about.isNotEmpty) ...[
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bio',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              about,
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
 
-                  // About section
-                  Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
+                  // User Details card (only if at least one field is present)
+                  if ((university.isNotEmpty && university != 'N/A') || 
+                      (faculty != null && faculty.isNotEmpty) || 
+                      (department != null && department.isNotEmpty) ||
+                      (accountType.isNotEmpty)) ...[
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'About',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                          SizedBox(height: 12),
-                          Text(
-                            person.about,
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              height: 1.5,
+                          if (accountType.isNotEmpty) ...[
+                            Divider(height: 1),
+                            ListTile(
+                              leading: Icon(Icons.account_circle, color: AppTheme.primaryColor),
+                              title: Text(
+                                'Account Type',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                              subtitle: Text(
+                                accountType == 'individual' ? 'Individual' : accountType == 'organization' ? 'Organization' : accountType,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
+                          if (university.isNotEmpty && university != 'N/A') ...[
+                            Divider(height: 1),
+                            ListTile(
+                              leading: Icon(Icons.school, color: AppTheme.primaryColor),
+                              title: Text(
+                                'University',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                              subtitle: Text(
+                                university,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (faculty != null && faculty.isNotEmpty) ...[
+                            Divider(height: 1),
+                            ListTile(
+                              leading: Icon(Icons.business, color: AppTheme.primaryColor),
+                              title: Text(
+                                'Faculty',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                              subtitle: Text(
+                                faculty,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (department != null && department.isNotEmpty) ...[
+                            Divider(height: 1),
+                            ListTile(
+                              leading: Icon(Icons.book, color: AppTheme.primaryColor),
+                              title: Text(
+                                'Department',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                              subtitle: Text(
+                                department,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: 16),
-
-                  // User Details card
-                  Card(
-                    elevation: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            person.userType == 'student'
-                                ? 'Student Details'
-                                : person.userType == 'staff'
-                                    ? 'Academic Staff Details'
-                                    : 'Details',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Divider(height: 1),
-                        ListTile(
-                          leading: Icon(Icons.school, color: AppTheme.primaryColor),
-                          title: Text(
-                            'University',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                          subtitle: Text(
-                            person.university,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        if (person.faculty != null) ...[
-                          Divider(height: 1),
-                          ListTile(
-                            leading: Icon(Icons.business, color: AppTheme.primaryColor),
-                            title: Text(
-                              'Faculty',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            ),
-                            subtitle: Text(
-                              person.faculty!,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (person.department != null) ...[
-                          Divider(height: 1),
-                          ListTile(
-                            leading: Icon(Icons.book, color: AppTheme.primaryColor),
-                            title: Text(
-                              'Department',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            ),
-                            subtitle: Text(
-                              person.department!,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                  ],
                   SizedBox(height: 24),
                 ],
               ),

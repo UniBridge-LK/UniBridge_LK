@@ -7,9 +7,7 @@ import 'package:chat_with_aks/models/university_model.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/models/thread_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // firebase_core import removed (not required here)
 
 class FirestoreService {
