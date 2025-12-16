@@ -72,6 +72,7 @@ class _ChatsViewState extends State<ChatsView> with SingleTickerProviderStateMix
             return ListTile(
               onTap: () async {
                 await ChatConversationsService.markAsRead(c.id, selfId);
+                await ChatConversationsService.markMessagesAsSeen(c.id, selfId);
                 Get.to(() => ChatThreadView(chatId: c.id, selfId: selfId, otherId: otherId));
               },
               leading: CircleAvatar(

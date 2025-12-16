@@ -13,21 +13,17 @@ class ProfileController extends GetxController {
   final AuthController _authController = Get.find<AuthController>();
 
   late TextEditingController _displayNameController;
-  late TextEditingController _bioController;
   bool _displayNameDisposed = false;
-  bool _bioDisposed = false;
 
   final RxBool _isLoading = false.obs;
   final RxBool _isEditing = false.obs;
   final RxString _error = ''.obs;
   final Rx<UserModel?> _currentUser = Rx<UserModel?>(null);
-  final RxInt _bioCount = 0.obs;
 
   bool get isLoading => _isLoading.value;
   bool get isEditing => _isEditing.value;
   String get error => _error.value;
   UserModel? get currentUser => _currentUser.value;
-  int get bioCount => _bioCount.value;
   TextEditingController get displayNameController {
     if (_displayNameDisposed) {
       _displayNameController = TextEditingController(text: _currentUser.value?.displayName ?? '');
@@ -36,29 +32,16 @@ class ProfileController extends GetxController {
     return _displayNameController;
   }
 
-  TextEditingController get bioController {
-    if (_bioDisposed) {
-      _bioController = TextEditingController(text: _currentUser.value?.bio ?? '');
-      _bioController.addListener(_updateBioCount);
-      _bioDisposed = false;
-    }
-    return _bioController;
-  }
-
   @override
   void onInit() {
     super.onInit();
     _displayNameController = TextEditingController();
-    _bioController = TextEditingController();
-    _bioController.addListener(_updateBioCount);
     _loadUserData();
   }
   @override
   void onClose() {
     _displayNameController.dispose();
-    _bioController.dispose();
     _displayNameDisposed = true;
-    _bioDisposed = true;
     super.onClose();
   } 
 
@@ -82,18 +65,16 @@ class ProfileController extends GetxController {
 
   void toggleEditing() {
     if (!_isEditing.value) {
+      // Entering edit mode - initialize controller with current user data
       final user = _currentUser.value;
       if (user != null) {
         displayNameController.text = user.displayName;
-        bioController.text = user.bio ?? '';
-        _updateBioCount();
       }
     } else {
+      // Exiting edit mode - reset to original values
       final user = _currentUser.value;
       if (user != null) {
         displayNameController.text = user.displayName;
-        bioController.text = user.bio ?? '';
-        _updateBioCount();
       }
     }
     _isEditing.value = !_isEditing.value;
@@ -108,15 +89,8 @@ class ProfileController extends GetxController {
       final user = _currentUser.value;
       if(user==null) return;
 
-      final bioText = bioController.text.trim();
-      if (bioText.length > 200) {
-        Get.snackbar('Bio too long', 'Bio must be 200 characters or less');
-        return;
-      }
-
       final updatedUser = user.copyWith(
-        displayName: displayNameController.text.trim(),
-        bio: bioText,
+        displayName: displayNameController.text,
       );
 
       await _firestoreService.updateUser(updatedUser);
@@ -140,10 +114,10 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<void> choosePhoto(ImageSource source) async {
+  Future<void> uploadPhoto() async {
     try {
       final picker = ImagePicker();
-      final XFile? file = await picker.pickImage(source: source, maxWidth: 1024, maxHeight: 1024);
+      final XFile? file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024);
       if (file == null) return;
       _isLoading.value = true;
 
@@ -213,9 +187,5 @@ class ProfileController extends GetxController {
 
   void clearError() {
     _error.value = '';
-  }
-
-  void _updateBioCount() {
-    _bioCount.value = bioController.text.length;
   }
 }

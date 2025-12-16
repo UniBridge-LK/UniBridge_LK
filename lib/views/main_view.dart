@@ -24,10 +24,7 @@ class MainView extends GetView<MainController> {
 		return Obx(() {
 			final idx = controller.index.value;
 			return Scaffold(
-				body: IndexedStack(
-					index: idx,
-					children: pages,
-				),
+				body: pages[idx],
 				bottomNavigationBar: BottomNavigationBar(
 					currentIndex: idx,
 					onTap: (i) => controller.setIndex(i),
@@ -37,7 +34,7 @@ class MainView extends GetView<MainController> {
 						items: const [
 							BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
 							BottomNavigationBarItem(icon: Icon(Icons.people), label: 'People'),
-							  BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chats'),
+							BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chats'),
 							BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
 							BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
 						],

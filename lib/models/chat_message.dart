@@ -8,7 +8,7 @@ class ChatMessage {
   final String senderId;
   final String receiverId;
   final String content;
-  final Timestamp timestamp;
+  final Timestamp? timestamp; // Nullable to support server timestamp placeholder
   ChatMessageStatus status;
 
   ChatMessage({
@@ -17,19 +17,23 @@ class ChatMessage {
     required this.senderId,
     required this.receiverId,
     required this.content,
-    required this.timestamp,
+    this.timestamp, // Optional: null until server assigns timestamp
     required this.status,
   });
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'chatId': chatId,
-        'senderId': senderId,
-        'receiverId': receiverId,
-        'content': content,
-        'timestamp': timestamp.millisecondsSinceEpoch,
-        'status': status.name,
-      };
+  Map<String, dynamic> toMap({bool forFirestore = false}) {
+    return {
+      'id': id,
+      'chatId': chatId,
+      'senderId': senderId,
+      'receiverId': receiverId,
+      'content': content,
+      'timestamp': forFirestore 
+          ? FieldValue.serverTimestamp() // Use server timestamp for Firestore
+          : (timestamp?.millisecondsSinceEpoch ?? Timestamp.now().millisecondsSinceEpoch),
+      'status': status.name,
+    };
+  }
 
   factory ChatMessage.fromMap(Map<String, dynamic> m) {
     // Handle both Timestamp and int (for Hive storage)

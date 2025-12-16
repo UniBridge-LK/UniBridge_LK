@@ -7,13 +7,13 @@ class ChatCloudService {
   static final _db = FirebaseFirestore.instance;
 
   static Future<void> send(ChatMessage msg) async {
-    // Write message
+    // Write message with server timestamp
     await _db
         .collection('chats')
         .doc(msg.chatId)
         .collection('messages')
         .doc(msg.id)
-        .set(msg.toMap());
+        .set(msg.toMap(forFirestore: true));
 
     // Update conversation metadata under chats/{chatId}
     final convoRef = _db.collection('chats').doc(msg.chatId);
@@ -22,7 +22,7 @@ class ChatCloudService {
       'id': msg.chatId,
       'participants': [msg.senderId, msg.receiverId]..sort(),
       'lastMessage': msg.content,
-      'lastMessageTime': msg.timestamp.millisecondsSinceEpoch,
+      'lastMessageTime': now,
       'lastMessageSenderId': msg.senderId,
       'unreadCount': {msg.receiverId: FieldValue.increment(1)},
       'updatedAt': now,

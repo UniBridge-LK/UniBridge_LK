@@ -7,8 +7,6 @@ import 'package:chat_with_aks/firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/services/chat_hive_service.dart';
 import 'package:chat_with_aks/services/chat_sync_service.dart';
-import 'package:chat_with_aks/services/persistence_service.dart';
-import 'package:chat_with_aks/services/firestore_seed_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,19 +14,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await ChatHiveService.init();
-  await PersistenceService.init();
-  
+
   // Initialize chat sync service for offline support
   ChatSyncService.start();
-  
-  // Seed Firestore in background (non-blocking)
-  FirestoreSeedService.seedIfNeeded().catchError((e) {
-    debugPrint('Firestore seeding failed (will retry later): $e');
-  });
-  
+
   Get.put(SettingsController());
   runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

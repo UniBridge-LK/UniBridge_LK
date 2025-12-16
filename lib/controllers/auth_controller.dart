@@ -1,7 +1,6 @@
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/services/auth_service.dart';
-import 'package:chat_with_aks/services/persistence_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // removed unused import
 import 'package:get/get.dart';
@@ -60,13 +59,6 @@ class AuthController extends GetxController {
       UserModel? userModel = await _authService.signInWithEmailAndPassword(email, password);
       if (userModel != null) {
         _userModel.value = userModel;
-        // Persist user data on login
-        await PersistenceService.saveUserData(
-          id: _user.value?.uid ?? '',
-          email: _user.value?.email ?? '',
-          displayName: userModel.displayName,
-          premiumStatus: userModel.premiumStatus,
-        );
         Get.offAllNamed(AppRoutes.main);
       }
     } catch (e) {
@@ -85,13 +77,6 @@ class AuthController extends GetxController {
       UserModel? userModel = await _authService.registerWithEmailAndPassword(email, password, displayName);
       if (userModel != null) {
         _userModel.value = userModel;
-        // Persist user data on registration
-        await PersistenceService.saveUserData(
-          id: _user.value?.uid ?? '',
-          email: _user.value?.email ?? '',
-          displayName: userModel.displayName,
-          premiumStatus: userModel.premiumStatus,
-        );
         Get.offAllNamed(AppRoutes.main);
       }
     } catch (e) {
@@ -108,9 +93,6 @@ class AuthController extends GetxController {
       _isLoading.value = true;
       await _authService.signOut();
       _userModel.value = null;
-      // Clear persisted data on logout
-      await PersistenceService.clearUserData();
-      await PersistenceService.clearNavState();
       Get.offAllNamed(AppRoutes.login);
     } catch (e) {
       _error.value = e.toString();

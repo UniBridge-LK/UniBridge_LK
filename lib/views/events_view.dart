@@ -3,7 +3,6 @@ import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/models/dummy_events.dart';
 import 'package:chat_with_aks/views/event_details_view.dart';
 import 'package:chat_with_aks/views/add_event_view.dart';
-import 'package:chat_with_aks/widgets/premium_popup.dart';
 import 'package:get/get.dart';
 
 class EventsView extends StatelessWidget {
@@ -29,7 +28,46 @@ class EventsView extends StatelessWidget {
           if (isPremiumUser()) {
             Get.to(() => AddEventView());
           } else {
-            Get.dialog(const PremiumPopup());
+            // Show premium popup
+            Get.dialog(
+              Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.workspace_premium, color: Colors.amber, size: 56),
+                      SizedBox(height: 16),
+                      Text('Unlock Premium',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 12),
+                      Text(
+                        'Access features like Chat Initiation, Event Creation, and unlimited connections with the community (Staff, Students, Alumni).',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Get.back();
+                            Get.snackbar('Premium', 'Redirecting to payment (mock)');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          ),
+                          child: Text('Buy Premium - LKR 500/mo', style: TextStyle(fontSize: 16)),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            );
           }
         },
         backgroundColor: AppTheme.primaryColor,

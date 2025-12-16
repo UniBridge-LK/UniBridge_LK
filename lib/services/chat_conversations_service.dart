@@ -50,4 +50,22 @@ class ChatConversationsService {
       'updatedAt': now,
     }, SetOptions(merge: true));
   }
+
+  static Future<void> markMessagesAsSeen(String chatId, String userId) async {
+    // Query messages where current user is the receiver and status is not 'seen'
+    final messagesRef = _db.collection('chats').doc(chatId).collection('messages');
+    final unreadMessages = await messagesRef
+        .where('receiverId', isEqualTo: userId)
+        .where('status', whereIn: ['sent', 'delivered'])
+        .get();
+    
+    // Batch update all unread messages to 'seen'
+    if (unreadMessages.docs.isNotEmpty) {
+      final batch = _db.batch();
+      for (final doc in unreadMessages.docs) {
+        batch.update(doc.reference, {'status': 'seen'});
+      }
+      await batch.commit();
+    }
+  }
 }
