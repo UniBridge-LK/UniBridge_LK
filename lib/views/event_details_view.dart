@@ -17,14 +17,7 @@ class EventDetailsView extends StatefulWidget {
 }
 
 class _EventDetailsViewState extends State<EventDetailsView> {
-  bool _isAttending = false;
   late EventModel _currentEvent;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentEvent = widget.event;
-  }
 
   Future<void> _reloadEventData() async {
     try {

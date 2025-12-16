@@ -219,20 +219,6 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12, top: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.primaryColor,
-        ),
-      ),
-    );
-  }
-
   Widget _buildSettingsTile({
     required BuildContext context,
     required IconData icon,

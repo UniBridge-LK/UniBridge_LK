@@ -28,6 +28,13 @@ class PeopleController extends GetxController {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       debugPrint('Loading users, current user ID: $currentUserId');
       
+      if (currentUserId == null) {
+        _error.value = 'User not authenticated';
+        _isLoading.value = false;
+        update();
+        return;
+      }
+      
       // Bind stream to get real-time updates from Firestore
       _users.bindStream(
         FirebaseFirestore.instance

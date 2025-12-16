@@ -141,6 +141,32 @@ class FirestoreService {
     }
   }
 
+  // Silent delete - removes request without notifying sender (for receiver's Delete action)
+  Future<void> deleteFriendRequest(String requestId) async {
+    try {
+      DocumentSnapshot requestDoc = await _firestore
+      .collection('friend_requests').doc(requestId).get();
+
+      if (requestDoc.exists) {
+        FriendRequestModel request = FriendRequestModel.fromMap(
+          requestDoc.data() as Map<String, dynamic>);
+
+        // Simply delete the request without notifications
+        await _firestore.collection('friend_requests').doc(requestId).delete();
+
+        // Remove the notification from receiver's notifications
+        await deleteNotificationByTypeAndUser(
+          request.receiverId,
+          NotificationType.friendRequests,
+          request.senderId
+        );
+      }
+      
+    } catch (e) {
+      throw Exception('Failed to delete friend request: ${e.toString()}');
+    }
+  }
+
   Future<void> responseToFriendRequest(String requestId, FriendRequestStatus status) async {
     try {
       await _firestore.collection('friend_requests').doc(requestId).update({
@@ -158,14 +184,20 @@ class FirestoreService {
           requestDoc.data() as Map<String, dynamic>);
 
         if (status == FriendRequestStatus.accepted) {
+        // Create friendship first
         await createFriendship(request.senderId, request.receiverId);
 
+        // Get accepter's name for notification
+        final accepterUser = await getUser(request.receiverId);
+        final accepterName = accepterUser?.displayName ?? 'Someone';
+
+        // Send notification to the person who sent the request
         await createNotification(
           NotificationModel(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             userId: request.senderId,
             title: 'Friend Request Accepted',
-            body: '${request.receiverId} has accepted your friend request',
+            body: '$accepterName has accepted your friend request',
             type: NotificationType.friendRequestAccepted,
             data: {
               'senderId': request.receiverId,
@@ -212,27 +244,34 @@ class FirestoreService {
   }
 
   Stream<List<FriendRequestModel>> getFriendRequestsStream(String userId) {
-    return _firestore.collection('friend_requests')
-    .where('receiverId', isEqualTo: userId)
-    .where('status', isEqualTo: 'pending')
-    .orderBy('createdAt', descending: true)
-    .snapshots()
-    .map((snapshot) => snapshot.docs
-      .map((doc) => FriendRequestModel.fromMap(doc.data()))
-      .toList()
-    );
+    return _firestore
+        .collection('friend_requests')
+        .where('receiverId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending')
+        // Avoid composite index requirement by sorting client-side
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => FriendRequestModel.fromMap(doc.data()))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   Stream<List<FriendRequestModel>> getSentFriendRequestsStream(String userId) {
-    return _firestore.collection('friend_requests')
-    .where('senderId', isEqualTo: userId)
-    .where('status', isEqualTo: 'pending')
-    .orderBy('createdAt', descending: true)
-    .snapshots()
-    .map((snapshot) => snapshot.docs
-      .map((doc) => FriendRequestModel.fromMap(doc.data()))
-      .toList()
-    );
+    return _firestore
+        .collection('friend_requests')
+        .where('senderId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => FriendRequestModel.fromMap(doc.data()))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   Future<FriendRequestModel> getFriendRequest(String senderId, String receiverId) async {
@@ -251,6 +290,59 @@ class FirestoreService {
       }
     } catch (e) {
       throw Exception('Failed to get friend request: ${e.toString()}');
+    }
+  }
+
+  // Check connection status between two users
+  // Returns: 'none', 'pending_sent', 'pending_received', or 'connected'
+  Future<String> getConnectionStatus(String currentUserId, String otherUserId) async {
+    try {
+      // Check if they are friends
+      final friendship = await getFriendship(currentUserId, otherUserId);
+      if (friendship != null && !friendship.isBlocked) {
+        return 'connected';
+      }
+
+      // Check if current user sent a pending request
+      QuerySnapshot sentRequest = await _firestore.collection('friend_requests')
+          .where('senderId', isEqualTo: currentUserId)
+          .where('receiverId', isEqualTo: otherUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (sentRequest.docs.isNotEmpty) {
+        return 'pending_sent';
+      }
+
+      // Check if current user received a pending request
+      QuerySnapshot receivedRequest = await _firestore.collection('friend_requests')
+          .where('senderId', isEqualTo: otherUserId)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (receivedRequest.docs.isNotEmpty) {
+        return 'pending_received';
+      }
+
+      return 'none';
+    } catch (e) {
+      return 'none';
+    }
+  }
+
+  // Stream version for real-time updates - watches both collections
+  Stream<String> getConnectionStatusStream(String currentUserId, String otherUserId) async* {
+    // Initial check
+    yield await getConnectionStatus(currentUserId, otherUserId);
+    
+    // Watch for changes in both friendships AND friend_requests for real-time updates
+    final List<String> userIds = [currentUserId, otherUserId]..sort();
+    final friendshipId = '${userIds[0]}_${userIds[1]}';
+    
+    // Watch friendship changes
+    await for (final _ in _firestore.collection('friendships').doc(friendshipId).snapshots()) {
+      yield await getConnectionStatus(currentUserId, otherUserId);
     }
   }
 
@@ -664,7 +756,7 @@ class FirestoreService {
       .collection('forumPosts')
       .snapshots()
       .map((snapshot) => snapshot.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             if ((data['id'] == null) || (data['id'] is String && (data['id'] as String).isEmpty)) {
               data['id'] = doc.id;
             }

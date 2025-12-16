@@ -1,6 +1,5 @@
 import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/services/otp_service.dart';
-import 'package:chat_with_aks/services/auth_service.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -38,8 +37,7 @@ class _VerifyOtpViewState extends State<VerifyOtpView> {
     try {
       final ok = await _otpService.verifyEmailOtp(userId: user.uid, code: code);
       if (ok) {
-        // Get the temporarily stored user model from controller
-        final authService = AuthService();
+        // Get user model from Firestore
         final userModel = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)

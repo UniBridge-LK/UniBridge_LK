@@ -90,6 +90,36 @@ class ChatThreadView extends StatelessWidget {
                 itemBuilder: (c, i) {
                   final m = messages[messages.length - 1 - i];
                   final isMe = m.senderId == controller.selfId;
+                  
+                  // System message - centered with different styling
+                  if (m.isSystemMessage) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue[200]!, width: 1),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.info_outline, size: 20, color: Colors.blue[700]),
+                          const SizedBox(height: 8),
+                          Text(
+                            m.content,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.blue[900],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  // Regular message
                   return Align(
                     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(

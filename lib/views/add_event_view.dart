@@ -136,7 +136,7 @@ class _AddEventViewState extends State<AddEventView> {
     // After a short delay, close both the dialog and this page
     Future.delayed(const Duration(seconds: 1), () {
       // Closes top 2 routes: dialog + AddEventView
-      if (Get.isOverlaysOpen ?? false) {
+      if (Get.isDialogOpen ?? false) {
         Get.close(2);
       } else {
         // Fallback: close current page

@@ -59,6 +59,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -100,3 +101,18 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+# pubspec.yaml
+
+# ... (rest of the file) ...
+
+flutter_launcher_icons:
+  # The path to your new icon file
+  image_path: "assets/icon/UniBridge_logo.png"
+  # You can specify which platforms to generate icons for (true by default)
+  android: true
+  ios: true
+  # Optionally, you can specify an adaptive icon for Android 8.0+
+  # adaptive_icon_background: "#FFFFFF" # A hex code or path to an image
+  # adaptive_icon_foreground: "assets/icon/UniBridge_logo_foreground.png"

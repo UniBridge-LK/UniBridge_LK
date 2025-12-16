@@ -33,7 +33,7 @@ class ChatConversationsService {
     return _db
         .collection('chats')
         .where('participants', arrayContains: userId)
-        .orderBy('lastMessageTime', descending: true)
+        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map((d) {
               final data = d.data();

@@ -1,5 +1,4 @@
 import 'package:chat_with_aks/controllers/home_controller.dart';
-import 'package:chat_with_aks/controllers/main_controller.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/models/university_model.dart';
@@ -11,7 +10,6 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    final mainController = Get.find<MainController>();
     return Scaffold(
       appBar: AppBar(
         elevation: 0,

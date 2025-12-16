@@ -1,5 +1,4 @@
 import 'thread_model.dart';
-import 'event_model.dart';
 
 final universityStructure = {
   'University of Moratuwa': {
