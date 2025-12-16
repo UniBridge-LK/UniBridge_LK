@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/models/event_model.dart';
+import 'package:chat_with_aks/views/add_event_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EventDetailsView extends StatefulWidget {
   final EventModel event;
@@ -13,13 +16,121 @@ class EventDetailsView extends StatefulWidget {
 
 class _EventDetailsViewState extends State<EventDetailsView> {
   bool _isAttending = false;
+  late EventModel _currentEvent;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentEvent = widget.event;
+  }
+
+  Future<void> _reloadEventData() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(widget.event.id)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        
+        // Parse event date/time
+        DateTime eventDateTime = DateTime.now();
+        if (data['eventDate'] != null) {
+          final timestamp = data['eventDate'] as Timestamp;
+          eventDateTime = timestamp.toDate();
+        }
+
+        setState(() {
+          _currentEvent = EventModel(
+            id: doc.id,
+            title: data['title'] ?? '',
+            date: _formatDate(eventDateTime),
+            time: _formatTime(eventDateTime),
+            location: data['location'] ?? '',
+            host: data['hostOrganization'] ?? '',
+            hostId: data['hostId'] ?? '',
+            hostName: data['hostName'] ?? '',
+            hostAvatar: _getAvatarLetter(data['hostName'] ?? ''),
+            description: data['description'] ?? '',
+            category: data['category'] ?? 'Event',
+            attendeeCount: data['attendeeCount'] ?? 0,
+            attendees: List<String>.from(data['attendees'] ?? []),
+            imageUrl: data['imageUrl'] ?? '',
+            eventType: data['eventType'] ?? 'Physical',
+            platform: data['platform'],
+          );
+        });
+      }
+    } catch (e) {
+      // Handle error silently or show message
+    }
+  }
+
+  String _formatDate(DateTime dateTime) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final ampm = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $ampm';
+  }
+
+  String _getAvatarLetter(String name) {
+    return name.isNotEmpty ? name[0].toUpperCase() : 'U';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isCreator = currentUserId == _currentEvent.hostId;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Event Details'),
         elevation: 0,
+        actions: isCreator
+            ? [
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _editEvent();
+                    } else if (value == 'delete') {
+                      _deleteEvent();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 20),
+                          SizedBox(width: 8),
+                          Text('Edit Event'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete Event', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+            : null,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -46,7 +157,7 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                     children: [
                       Expanded(
                         child: Text(
-                          widget.event.title,
+                          _currentEvent.title,
                           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -57,7 +168,7 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          widget.event.category,
+                          _currentEvent.category,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.blue.shade900,
@@ -69,11 +180,16 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                   ),
                   SizedBox(height: 16),
                   // Date, Time, Location
-                  _buildInfoRow(Icons.calendar_today, widget.event.date),
+                  _buildInfoRow(Icons.calendar_today, _currentEvent.date),
                   SizedBox(height: 12),
-                  _buildInfoRow(Icons.access_time, widget.event.time),
+                  _buildInfoRow(Icons.access_time, _currentEvent.time),
                   SizedBox(height: 12),
-                  _buildInfoRow(Icons.location_on, widget.event.location),
+                  _buildInfoRow(
+                    _currentEvent.eventType == 'Online' ? Icons.video_call : Icons.location_on,
+                    _currentEvent.eventType == 'Online'
+                        ? (_currentEvent.platform ?? 'Online Event')
+                        : _currentEvent.location,
+                  ),
                   SizedBox(height: 24),
 
                   // Hosted By
@@ -88,7 +204,7 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                       // For now, just show a snackbar
                       Get.snackbar(
                         'Profile',
-                        'View ${widget.event.hostName} profile',
+                        'View ${_currentEvent.hostName} profile',
                         snackPosition: SnackPosition.BOTTOM,
                       );
                     },
@@ -104,7 +220,7 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                             radius: 20,
                             backgroundColor: Colors.blue.shade100,
                             child: Text(
-                              widget.event.hostAvatar,
+                              _currentEvent.hostAvatar,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue.shade900,
@@ -112,23 +228,26 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                             ),
                           ),
                           SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.event.hostName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _currentEvent.host,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              Text(
-                                widget.event.host,
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                            ],
+                                Text(
+                                  _currentEvent.hostName,
+                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          Spacer(),
                           Icon(Icons.arrow_forward, color: Colors.grey),
                         ],
                       ),
@@ -143,96 +262,11 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    widget.event.description,
+                    _currentEvent.description,
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.6),
                   ),
-                  SizedBox(height: 32),
-
-                  // Attendees
-                  Text(
-                    '${widget.event.attendeeCount} people attending',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        for (int i = 0; i < (widget.event.attendeeCount > 5 ? 5 : widget.event.attendeeCount); i++)
-                          Positioned(
-                            left: i * 30.0,
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.blue.shade100,
-                              child: Text(
-                                'A${i + 1}',
-                                style: TextStyle(fontSize: 10),
-                              ),
-                            ),
-                          ),
-                        SizedBox(width: 150),
-                        if (widget.event.attendeeCount > 5)
-                          Text(
-                            '+${widget.event.attendeeCount - 5} more',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade900,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 32),
-
-                  // Share Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Get.snackbar(
-                          'Share',
-                          'Event shared! (mock)',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
-                      icon: Icon(Icons.share),
-                      label: Text('Share Event'),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-
-                  // Attend Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _isAttending = !_isAttending;
-                        });
-                        Get.snackbar(
-                          _isAttending ? 'Attending' : 'Not Attending',
-                          _isAttending
-                              ? 'You are attending this event'
-                              : 'You cancelled your attendance',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
-                      icon: Icon(_isAttending ? Icons.check_circle : Icons.event_available),
-                      label: Text(_isAttending ? 'Attending' : 'I\'m Attending'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isAttending ? Colors.green : Colors.blue,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 32),                                 
+                  
                 ],
               ),
             ),
@@ -240,6 +274,58 @@ class _EventDetailsViewState extends State<EventDetailsView> {
         ),
       ),
     );
+  }
+
+  Future<void> _editEvent() async {
+    await Get.to(() => AddEventView(event: _currentEvent));
+    // Reload event data after returning from edit
+    await _reloadEventData();
+  }
+
+  Future<void> _deleteEvent() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Delete Event'),
+        content: Text('Are you sure you want to delete this event? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('events')
+            .doc(_currentEvent.id)
+            .delete();
+
+        Get.back(); // Go back to events list
+        Get.snackbar(
+          'Success',
+          'Event deleted successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } catch (e) {
+        Get.snackbar(
+          'Error',
+          'Failed to delete event: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
   }
 
   Widget _buildInfoRow(IconData icon, String text) {

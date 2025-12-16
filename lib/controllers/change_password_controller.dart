@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+
+  
+
 class ChangePasswordController  extends GetxController{
   final TextEditingController currentPasswordController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
@@ -59,26 +62,60 @@ class ChangePasswordController  extends GetxController{
             throw Exception('No authenticated user found.');
           }
 
+          // Only email/password accounts can change password here
+          final hasPasswordProvider = user.providerData.any((p) => p.providerId == 'password');
+          if (!hasPasswordProvider) {
+            _isLoading.value = false;
+            Get.snackbar('Unavailable', 'Password change is only available for email/password accounts');
+            return;
+          }
+
+          final currentPwd = currentPasswordController.text.trim();
+          final newPwd = newPasswordController.text.trim();
+
           final credential = EmailAuthProvider.credential(
             email: user.email!,
-            password: currentPasswordController.text,
+            password: currentPwd,
           );
           await user.reauthenticateWithCredential(credential);
-          await user.updatePassword(newPasswordController.text);
-          Get.snackbar('Success', 'Password changed successfully.',
-          backgroundColor: Colors.green.withAlpha(26),
-          colorText: Colors.green,
-          duration: Duration(seconds: 3),
-          );
+          await user.updatePassword(newPwd);
+          await user.reload();
           
           currentPasswordController.clear();
           newPasswordController.clear();
           confirmPasswordController.clear();
 
-          // Give the snackbar time to render before navigating back
-          await Future.delayed(const Duration(milliseconds: 800));
+          // Close the change password dialog first
           Get.back();
+
+          // Show success alert dialog
+          await Get.dialog(
+            AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 28),
+                  SizedBox(width: 12),
+                  Text('Success'),
+                ],
+              ),
+              content: Text(
+                'Your password has been changed successfully!',
+                style: TextStyle(fontSize: 16),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Get.back(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+            barrierDismissible: false,
+          );
         } on FirebaseAuthException catch (e) {
+          debugPrint('changePassword FirebaseAuthException code=${e.code} message=${e.message}');
           String errorMessage;
           switch (e.code) {
             case 'wrong-password':
@@ -90,21 +127,31 @@ class ChangePasswordController  extends GetxController{
             case 'requires-recent-login':
               errorMessage = 'Please log in again and try changing the password.';
               break;
+            case 'user-mismatch':
+              errorMessage = 'Credential does not match the current user. Please log in again.';
+              break;
+            case 'too-many-requests':
+              errorMessage = 'Too many attempts. Please wait a bit and try again.';
+              break;
+            case 'invalid-credential':
+              errorMessage = 'The current password is incorrect or expired.';
+              break;
             default:
-              errorMessage = 'Failed to change password. Please try again.';
+              errorMessage = 'Failed to change password (${e.code}). Please try again.';
           }
           _error.value = errorMessage;
           Get.snackbar('Error', errorMessage,
-          backgroundColor: Colors.red.withAlpha(26),
+          backgroundColor: Colors.red.withOpacity(0.1),
             colorText: Colors.red,
             duration: Duration(seconds: 3),
           );
 
         }catch(e){
+          debugPrint('changePassword unknown error: $e');
           _error.value = 'An error occurred. Please try again.';
-          debugPrint(e.toString());
+          print(e.toString());
           Get.snackbar('Error', _error.value,
-            backgroundColor: Colors.red.withAlpha(26),
+            backgroundColor: Colors.red.withOpacity(0.1),
             colorText: Colors.red,
             duration: Duration(seconds: 3),
           );

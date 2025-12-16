@@ -11,6 +11,7 @@ class ThreadModel {
   final List<String> likes;
   final String category; // 'global' or 'general'
   final DateTime lastActivity;
+  final String forumScope; // 'global', 'university', 'faculty', 'department'
 
   ThreadModel({
     required this.id,
@@ -24,6 +25,7 @@ class ThreadModel {
     this.replyCount = 0,
     this.likes = const [],
     this.category = 'general',
+    this.forumScope = 'global',
     DateTime? lastActivity,
   }) : lastActivity = lastActivity ?? timestamp;
 
@@ -48,6 +50,7 @@ class ThreadModel {
       replyCount: m['replyCount'] ?? m['replies'] ?? 0,
       likes: (m['likes'] is List) ? List<String>.from(m['likes']) : [],
       category: m['category'] ?? 'general',
+      forumScope: m['forumScope'] ?? 'global',
       lastActivity: parseTime(m['lastActivity'] ?? m['timestamp'] ?? m['time']),
     );
   }
@@ -65,6 +68,7 @@ class ThreadModel {
       'replyCount': replyCount,
       'likes': likes,
       'category': category,
+      'forumScope': forumScope,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'lastActivity': lastActivity.millisecondsSinceEpoch,
     };

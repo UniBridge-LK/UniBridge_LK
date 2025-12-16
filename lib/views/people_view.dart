@@ -3,10 +3,11 @@ import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:chat_with_aks/controllers/auth_controller.dart';
+import 'package:chat_with_aks/controllers/people_controller.dart';
 import 'package:chat_with_aks/models/friend_request_model.dart';
+import 'package:chat_with_aks/models/user_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chat_with_aks/widgets/premium_popup.dart';
-import 'package:chat_with_aks/models/people_data.dart';
 import 'package:chat_with_aks/views/user_profile_view.dart';
 
 class PeopleView extends StatefulWidget {
@@ -29,16 +30,19 @@ class _PeopleViewState extends State<PeopleView> {
     // return email.toLowerCase().contains('premium');
   }
 
-  List<PersonData> _filter(List<PersonData> list) {
+  List<UserModel> _filter(List<UserModel> list) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return list;
-    return list.where((person) {
-      final name = person.name.toLowerCase();
-      return name.contains(q);
+    return list.where((user) {
+      final name = user.displayName.toLowerCase();
+      final university = user.universityName.toLowerCase();
+      final faculty = user.faculty.toLowerCase();
+      final department = user.department.toLowerCase();
+      return name.contains(q) || university.contains(q) || faculty.contains(q) || department.contains(q);
     }).toList();
   }
 
-  void _showConnectDialog(PersonData person) {
+  void _showConnectDialog(UserModel person) {
     final noteController = TextEditingController();
     Get.dialog(
       Dialog(
@@ -49,7 +53,7 @@ class _PeopleViewState extends State<PeopleView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Connect with ${person.name}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('Connect with ${person.displayName}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 16),
               Text('Add a note (Optional)', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
               SizedBox(height: 8),
@@ -86,7 +90,7 @@ class _PeopleViewState extends State<PeopleView> {
                       );
                       try { 
                         await _fs.sendFriendRequest(req); 
-                        Get.snackbar('Success', 'Connection request sent to ${person.name}'); 
+                        Get.snackbar('Success', 'Connection request sent to ${person.displayName}'); 
                       } catch (e) { 
                         Get.snackbar('Error', 'Failed to send request'); 
                       }
@@ -125,7 +129,7 @@ class _PeopleViewState extends State<PeopleView> {
                   child: TextField(
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search),
-                      hintText: 'Search by name or course...',
+                      hintText: 'Search by name',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                       filled: true,
                       fillColor: Colors.grey.shade100,
@@ -138,77 +142,113 @@ class _PeopleViewState extends State<PeopleView> {
             ),
           ),
           Expanded(
-            child: Builder(
-              builder: (context) {
-                // Using dummy data - later replace with Firestore stream
-                final list = dummyPeople;
-                final filtered = _filter(list);
-                if (filtered.isEmpty) return Center(child: Text('No members found'));
+            child: GetBuilder<PeopleController>(
+              init: PeopleController(),
+              builder: (controller) {
+                if (controller.isLoading) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-                return ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  itemBuilder: (c, i) {
-                    final person = filtered[i];
-                    return GestureDetector(
-                      onTap: () {
-                        // Navigate to user profile view
-                        Get.to(() => UserProfileView(person: person));
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withAlpha(26),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                if (controller.error.isNotEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text('Error: ${controller.error}'),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: controller.refreshUsers,
+                          child: Text('Retry'),
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              // Avatar
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundColor: Color(int.parse('0xFF${person.avatarColor}')),
-                                child: Text(
-                                  person.avatarLetter,
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
+                      ],
+                    ),
+                  );
+                }
+
+                return Obx(() {
+                  final list = controller.users;
+                  final filtered = _filter(list);
+                  
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            query.isEmpty ? 'No users found' : 'No matching users',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    itemBuilder: (c, i) {
+                      final person = filtered[i];
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(() => UserProfileView(), arguments: person);
+                        },
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withAlpha(26),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                // Avatar
+                                CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor: Color(int.parse('0xFF${controller.getAvatarColor(i)}')),
+                                  backgroundImage: person.photoURL.isNotEmpty 
+                                      ? NetworkImage(person.photoURL)
+                                      : null,
+                                  child: person.photoURL.isEmpty
+                                      ? Text(
+                                          controller.getAvatarLetter(person.displayName),
+                                          style: TextStyle(
+                                            color: AppTheme.primaryColor,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        person.displayName,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.black87,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 4),                                      
+                                    ],
                                   ),
                                 ),
-                              ),
-                              SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      person.name,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      person.profileHeadline,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                               SizedBox(width: 12),
                               OutlinedButton(
                                 onPressed: () {
@@ -230,11 +270,12 @@ class _PeopleViewState extends State<PeopleView> {
                               ),
                             ],
                           ),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
+                      );
+                    },
+                  );
+                });
               },
             ),
           )

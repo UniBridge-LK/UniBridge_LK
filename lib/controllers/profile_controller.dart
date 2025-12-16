@@ -1,3 +1,6 @@
+import 'dart:core';
+import 'dart:io';
+
 import 'package:chat_with_aks/controllers/auth_controller.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
@@ -6,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart' show Firebase;
+import 'package:chat_with_aks/firebase_options.dart';
 
 class ProfileController extends GetxController {
   
@@ -13,7 +18,9 @@ class ProfileController extends GetxController {
   final AuthController _authController = Get.find<AuthController>();
 
   late TextEditingController _displayNameController;
+  late TextEditingController _bioController;
   bool _displayNameDisposed = false;
+  bool _bioDisposed = false;
 
   final RxBool _isLoading = false.obs;
   final RxBool _isEditing = false.obs;
@@ -31,17 +38,27 @@ class ProfileController extends GetxController {
     }
     return _displayNameController;
   }
+  TextEditingController get bioController {
+    if (_bioDisposed) {
+      _bioController = TextEditingController(text: _currentUser.value?.bio ?? '');
+      _bioDisposed = false;
+    }
+    return _bioController;
+  }
 
   @override
   void onInit() {
     super.onInit();
     _displayNameController = TextEditingController();
+    _bioController = TextEditingController();
     _loadUserData();
   }
   @override
   void onClose() {
     _displayNameController.dispose();
     _displayNameDisposed = true;
+    _bioController.dispose();
+    _bioDisposed = true;
     super.onClose();
   } 
 
@@ -69,12 +86,14 @@ class ProfileController extends GetxController {
       final user = _currentUser.value;
       if (user != null) {
         displayNameController.text = user.displayName;
+        bioController.text = user.bio ?? '';
       }
     } else {
       // Exiting edit mode - reset to original values
       final user = _currentUser.value;
       if (user != null) {
         displayNameController.text = user.displayName;
+        bioController.text = user.bio ?? '';
       }
     }
     _isEditing.value = !_isEditing.value;
@@ -90,15 +109,19 @@ class ProfileController extends GetxController {
       if(user==null) return;
 
       final updatedUser = user.copyWith(
-        displayName: displayNameController.text,
+        displayName: displayNameController.text.trim().isNotEmpty
+            ? displayNameController.text.trim()
+            : user.displayName,
+        bio: bioController.text.trim(),
       );
 
-      await _firestoreService.updateUser(updatedUser);
+      await _firestoreService.UpdateUser(updatedUser);
       _isEditing.value = false;
       Get.snackbar('Success',"Profile updated successfully");
 
     }catch(e){
       _error.value = e.toString();
+      print(e.toString());
       debugPrint(e.toString());
       Get.snackbar('Error',"Failed to update profile");
     } finally{
@@ -127,14 +150,35 @@ class ProfileController extends GetxController {
         return;
       }
 
-      final storageRef = FirebaseStorage.instance.ref().child('user_photos').child('${user.id}.jpg');
-      final uploadTask = storageRef.putData(await file.readAsBytes());
-      final snapshot = await uploadTask;
-      final url = await snapshot.ref.getDownloadURL();
+        final storage = FirebaseStorage.instanceFor(
+          app: Firebase.app(),
+          bucket: DefaultFirebaseOptions.android.storageBucket,
+        );
 
-      final updatedUser = user.copyWith(photoURL: url);
-      await _firestoreService.updateUser(updatedUser);
-      Get.snackbar('Success', 'Profile photo updated');
+        // Reduce long-running resumable session retries that can mask 404s
+        storage.setMaxUploadRetryTime(const Duration(seconds: 12));
+        storage.setMaxOperationRetryTime(const Duration(seconds: 12));
+
+      final storageRef = storage
+          .ref()
+          .child('user_photos')
+          .child(user.id)
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      try {
+        final TaskSnapshot snapshot = await storageRef.putFile(
+          File(file.path),
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
+        final String url = await snapshot.ref.getDownloadURL();
+
+        final updatedUser = user.copyWith(photoURL: url);
+        await _firestoreService.UpdateUser(updatedUser);
+        Get.snackbar('Success', 'Profile photo updated');
+      } on FirebaseException catch (fe) {
+        debugPrint('FirebaseException during upload: code=${fe.code} message=${fe.message}');
+        Get.snackbar('Upload Error', 'Storage error: ${fe.code}');
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload photo');
     } finally {

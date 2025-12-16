@@ -2,7 +2,7 @@ import 'package:chat_with_aks/controllers/home_controller.dart';
 import 'package:chat_with_aks/controllers/main_controller.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:chat_with_aks/models/mock_data.dart';
+import 'package:chat_with_aks/models/university_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -74,10 +74,7 @@ class HomeView extends GetView<HomeController> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: (){
-                        // switch to forum tab
-                        mainController.setIndex(2);
-                        // ensure main route
-                        if(Get.currentRoute != AppRoutes.main) Get.offAllNamed(AppRoutes.main);
+                        Get.toNamed(AppRoutes.forum, arguments: {'type': 'global'});
                       },
                       child: Text('View Global Threads', style: TextStyle(fontWeight: FontWeight.w600)),
                     )
@@ -116,17 +113,39 @@ class HomeView extends GetView<HomeController> {
             // Universities List
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: List.generate(
-                  controller.universityNames.length,
-                  (index) {
-                    final name = controller.universityNames[index];
-                    final faculties = universityStructure[name] ?? {};
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: GestureDetector(
-                        onTap: () => controller.openUniversity(name),
-                        child: Container(
+              child: Obx(() {
+                if (controller.isLoading) {
+                  return Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 24), child: CircularProgressIndicator()));
+                }
+                if (controller.error.isNotEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Column(children: [
+                      Icon(Icons.error_outline, color: Colors.red),
+                      SizedBox(height: 8),
+                      Text(controller.error),
+                    ]),
+                  );
+                }
+
+                final items = controller.universities;
+                if (items.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text('No universities available', style: TextStyle(color: Colors.grey[700])),
+                  );
+                }
+
+                return Column(
+                  children: List.generate(
+                    items.length,
+                    (index) {
+                      final UniversityModel uni = items[index];
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: GestureDetector(
+                          onTap: () => controller.openUniversity(uni),
+                          child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -157,7 +176,7 @@ class HomeView extends GetView<HomeController> {
                               Expanded(
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                   Text(
-                                    name,
+                                    uni.name,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -165,7 +184,7 @@ class HomeView extends GetView<HomeController> {
                                     ),
                                   ),
                                   SizedBox(height:4),
-                                  Text('${faculties.length} Faculties Listed', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  Text('Tap to view faculties', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                                 ]),
                               ),
                               Icon(
@@ -175,13 +194,15 @@ class HomeView extends GetView<HomeController> {
                               ),
                             ],
                           ),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                      );
+                    },
+                  ),
+                );
+              }),
             ),
+            
             SizedBox(height: 24),
           ],
         ),

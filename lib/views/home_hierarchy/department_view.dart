@@ -28,15 +28,12 @@ class DepartmentView extends StatelessWidget {
             ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
             onPressed: (){
-              try{
-                final mc = Get.find<MainController>();
-                mc.setIndex(2);
-                if(Get.currentRoute != '/main' && Get.currentRoute != AppRoutes.main){
-                  Get.offAllNamed(AppRoutes.main);
-                }
-              }catch(e){
-                // ignore
-              }
+              Get.toNamed('/forum', arguments: {
+                'type': 'department', 
+                'uni': uni, 
+                'faculty': faculty, 
+                'department': department
+              });
             },
             child: Text('Go to Forum'))
         ],),

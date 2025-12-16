@@ -3,21 +3,17 @@ import 'package:chat_with_aks/models/friend_request_model.dart';
 import 'package:chat_with_aks/models/friendship_model.dart';
 import 'package:chat_with_aks/models/message_model.dart';
 import 'package:chat_with_aks/models/notification_model.dart';
+import 'package:chat_with_aks/models/university_model.dart';
 import 'package:chat_with_aks/models/user_model.dart';
-import 'package:chat_with_aks/models/thread_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:chat_with_aks/models/thread_model.dart';
+import 'package:chat_with_aks/models/reply_model.dart';
 // firebase_core import removed (not required here)
 
 class FirestoreService {
   // Firestore related methods would be here
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  Map<String, dynamic> _ensureMap(Object? data) {
-    if (data == null) return {};
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    return {};
-  }
 
   Future<void> createUser(UserModel user) async {
     try {
@@ -31,7 +27,7 @@ class FirestoreService {
     try {
       DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
-        return UserModel.fromMap(_ensureMap(doc.data()));
+        return UserModel.fromMap(doc.data() as Map<String, dynamic>);
       }
       return null;
     } catch (e) {
@@ -74,31 +70,20 @@ class FirestoreService {
   Stream<UserModel?> getUserStream(String userId) {
     return _firestore.collection('users')
     .doc(userId).snapshots()
-    .map((doc) => doc.exists ? UserModel.fromMap(_ensureMap(doc.data())) : null);
+    .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
   }
 
-  Future<void> updateUser(UserModel user) async {
+  Future<void> UpdateUser(UserModel user) async {
     try {
       await _firestore.collection('users').doc(user.id).update(user.toMap());
     } catch (e) {
-      throw Exception('Failed to update user: ${e.toString()}');
+      throw Exception('Failed to update user');
     }
   }
 
   Stream<List<UserModel>> getUsersStream() {
     return _firestore.collection('users').snapshots().map((snapshot) =>
-      snapshot.docs.map((doc) => UserModel.fromMap(_ensureMap(doc.data()))).toList()
-    );
-  }
-
-  /// Stream raw summaries from `userSummaries` collection used by People directory UI
-  Stream<List<Map<String, dynamic>>> getUserSummariesStream() {
-    return _firestore.collection('userSummaries').snapshots().map((snapshot) =>
-      snapshot.docs.map((doc) {
-        final m = _ensureMap(doc.data());
-        m.addAll({'id': doc.id});
-        return m;
-      }).toList()
+      snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList()
     );
   }
 
@@ -139,7 +124,7 @@ class FirestoreService {
 
       if (requestDoc.exists) {
         FriendRequestModel request = FriendRequestModel.fromMap(
-          _ensureMap(requestDoc.data()));
+          requestDoc.data() as Map<String, dynamic>);
 
         await _firestore.collection('friend_requests').doc(requestId).delete();
 
@@ -170,7 +155,7 @@ class FirestoreService {
 
       if (requestDoc.exists) {
         FriendRequestModel request = FriendRequestModel.fromMap(
-          _ensureMap(requestDoc.data()));
+          requestDoc.data() as Map<String, dynamic>);
 
         if (status == FriendRequestStatus.accepted) {
         await createFriendship(request.senderId, request.receiverId);
@@ -233,7 +218,7 @@ class FirestoreService {
     .orderBy('createdAt', descending: true)
     .snapshots()
     .map((snapshot) => snapshot.docs
-      .map((doc) => FriendRequestModel.fromMap(_ensureMap(doc.data())))
+      .map((doc) => FriendRequestModel.fromMap(doc.data()))
       .toList()
     );
   }
@@ -245,7 +230,7 @@ class FirestoreService {
     .orderBy('createdAt', descending: true)
     .snapshots()
     .map((snapshot) => snapshot.docs
-      .map((doc) => FriendRequestModel.fromMap(_ensureMap(doc.data())))
+      .map((doc) => FriendRequestModel.fromMap(doc.data()))
       .toList()
     );
   }
@@ -260,7 +245,7 @@ class FirestoreService {
 
       if (query.docs.isNotEmpty) {
         return FriendRequestModel.fromMap(
-          _ensureMap(query.docs.first.data()));
+          query.docs.first.data() as Map<String, dynamic>);
       } else {
         throw Exception('No pending friend request found');
       }
@@ -357,10 +342,10 @@ class FirestoreService {
       List<FriendshipModel> friendships = [];
 
       for (var doc in snapshot1.docs) {
-        friendships.add(FriendshipModel.fromMap(_ensureMap(doc.data())));
+        friendships.add(FriendshipModel.fromMap(doc.data()));
       }
       for (var doc in snapshot2.docs) {
-        friendships.add(FriendshipModel.fromMap(_ensureMap(doc.data())));
+        friendships.add(FriendshipModel.fromMap(doc.data() as Map<String, dynamic>));
       }
 
       return friendships.where((f)=> !f.isBlocked).toList();
@@ -375,7 +360,7 @@ class FirestoreService {
       DocumentSnapshot doc = await _firestore.collection('friendships').doc(friendshipId).get();
 
       if (doc.exists) {
-        return FriendshipModel.fromMap(_ensureMap(doc.data()));
+        return FriendshipModel.fromMap(doc.data() as Map<String, dynamic>);
       }
       return null;
     } catch (e) {
@@ -391,7 +376,7 @@ class FirestoreService {
       DocumentSnapshot doc = await _firestore.collection('friendships').doc(friendshipId).get();
 
       if (doc.exists) {
-        FriendshipModel friendship = FriendshipModel.fromMap(_ensureMap(doc.data()));
+        FriendshipModel friendship = FriendshipModel.fromMap(doc.data() as Map<String, dynamic>);
         return friendship.isBlocked;
       }
       return false;
@@ -438,7 +423,7 @@ class FirestoreService {
         await chatRef.set(newChat.toMap());
       }
       else{
-        ChatModel existingChat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel existingChat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
         if(existingChat.deletedBy[userId1] == true){
           await restoreChatForUser(chatId, userId1);
         }
@@ -459,30 +444,11 @@ class FirestoreService {
     .orderBy('updatedAt', descending: true)
     .snapshots()
     .map((snapshot) => snapshot.docs
-      .map((doc) => ChatModel.fromMap(_ensureMap(doc.data())))
+      .map((doc) => ChatModel.fromMap(doc.data()))
       .where((chat) => chat.deletedBy[userId] != true)
       .toList()
     );
-  }
-
-  // Threads collection methods under artifacts/{appId}/public/data/forumPosts
-  Stream<List<ThreadModel>> getThreadsStream({required String appId, String? uni, String? course, String? category}) {
-    Query q = _firestore
-      .collection('artifacts')
-      .doc(appId)
-      .collection('public')
-      .doc('data')
-      .collection('forumPosts')
-      .orderBy('lastActivity', descending: true);
-
-    if (uni != null && uni.isNotEmpty) q = q.where('uni', isEqualTo: uni);
-    if (course != null && course.isNotEmpty) q = q.where('course', isEqualTo: course);
-    if (category != null && category.isNotEmpty) q = q.where('category', isEqualTo: category);
-
-    return q.snapshots().map((snapshot) => snapshot.docs
-      .map((doc) => ThreadModel.fromMap(_ensureMap(doc.data())..addAll({'id': doc.id})))
-      .toList());
-  }
+  }  
 
   Future<String> createThread(ThreadModel thread, {required String appId}) async {
     try {
@@ -532,6 +498,146 @@ class FirestoreService {
     }
   }
 
+  Future<String> addReply(String threadId, ReplyModel reply, {required String appId}) async {
+    try {
+      final data = reply.toMap();
+      data.remove('id');
+
+      final docRef = await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .add(data);
+
+      await docRef.update({'id': docRef.id, 'threadId': threadId});
+
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .update({
+            'replyCount': FieldValue.increment(1),
+            'lastActivity': DateTime.now().millisecondsSinceEpoch,
+          });
+
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Failed to add reply: ${e.toString()}');
+    }
+  }
+
+  Stream<List<ReplyModel>> getRepliesStream(String threadId, {required String appId}) {
+    return _firestore
+        .collection('artifacts')
+        .doc(appId)
+        .collection('public')
+        .doc('data')
+        .collection('forumPosts')
+        .doc(threadId)
+        .collection('replies')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => ReplyModel.fromMap(doc.data())).toList());
+  }
+
+  Future<void> likeReply(String threadId, String replyId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'likes': FieldValue.arrayUnion([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to like reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> unlikeReply(String threadId, String replyId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'likes': FieldValue.arrayRemove([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to unlike reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> editReply(String threadId, String replyId, String newContent, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'content': newContent,
+          });
+    } catch (e) {
+      throw Exception('Failed to edit reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> deleteReply(String threadId, String replyId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to delete reply: ${e.toString()}');
+    }
+  }
+
+  Stream<List<ThreadModel>> getThreadsStream({required String appId}) {
+    return _firestore
+      .collection('artifacts')
+      .doc(appId)
+      .collection('public')
+      .doc('data')
+      .collection('forumPosts')
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            if ((data['id'] == null) || (data['id'] is String && (data['id'] as String).isEmpty)) {
+              data['id'] = doc.id;
+            }
+            return ThreadModel.fromMap(data);
+          }).toList());
+  }
+
   Future<void> updateChatLastMessage(String chatId, MessageModel message) async {
     try {
       await _firestore.collection('chats').doc(chatId).update({
@@ -550,7 +656,7 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
 
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         chat.lastSeenBy[userId] = DateTime.now();
 
@@ -568,7 +674,7 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
 
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         chat.deletedBy[userId] = true;
         chat.deletedAt[userId] = DateTime.now();
@@ -588,7 +694,7 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
 
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         chat.deletedBy[userId] = false;
         chat.deletedAt[userId] = null;
@@ -608,7 +714,7 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
 
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         int currentCount = chat.unreadCount[userId] ?? 0;
         chat.unreadCount[userId] = currentCount + count;
@@ -631,7 +737,7 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
 
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         chat.unreadCount[userId] = 0;
 
@@ -654,7 +760,7 @@ class FirestoreService {
       await updateUserLastseen(chatId, message.senderId);
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
       if (chatDoc.exists) {
-        ChatModel chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        ChatModel chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
 
         int currentUnread = chat.getUnreadCount( message.receiverId);
 
@@ -681,12 +787,12 @@ class FirestoreService {
       DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(chatId).get();
       ChatModel? chat;
       if (chatDoc.exists) {
-        chat = ChatModel.fromMap(_ensureMap(chatDoc.data()));
+        chat = ChatModel.fromMap(chatDoc.data() as Map<String, dynamic>);
       }
       List<MessageModel> messages = [];
 
       for(var doc in snapshot.docs) {
-        MessageModel message = MessageModel.fromMap(_ensureMap(doc.data()));
+        MessageModel message = MessageModel.fromMap(doc.data());
         if((message.senderId == userId1 && message.receiverId == userId2) ||
            (message.senderId == userId2 && message.receiverId == userId1)) {
           // Check if the message is deleted for the user
@@ -757,7 +863,7 @@ class FirestoreService {
     .orderBy('createdAt', descending: true)
     .snapshots()
     .map((snapshot) => snapshot.docs
-      .map((doc) => NotificationModel.fromMap(_ensureMap(doc.data())))
+      .map((doc) => NotificationModel.fromMap(doc.data()))
       .toList()
     );
   }
@@ -833,6 +939,121 @@ class FirestoreService {
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to delete notification by type and user: ${e.toString()}');
+    }
+  }
+
+  Future<String> addUniversity(String universityName) async {
+  try {
+    // 1. Create a reference to the 'universities' collection
+    final CollectionReference universities = _firestore.collection('universities');
+
+    // 2. Prepare the data
+    final University newUniversity = University(
+      id: '', // ID is temporary, Firestore will generate one
+      name: universityName,
+    );
+
+    // 3. Add the document to Firestore
+    DocumentReference docRef = await universities.add(newUniversity.toFirestore());
+
+    print('University added with ID: ${docRef.id}');
+    return docRef.id; // Return the generated ID for later use
+  } catch (e) {
+    print('Error adding university: $e');
+    rethrow;
+  }
+  }
+
+  Future<String> addFaculty(String facultyName, String universityId) async {
+  try {
+    final CollectionReference faculties = _firestore.collection('faculties');
+
+    final Faculty newFaculty = Faculty(
+      id: '',
+      name: facultyName,
+      universityId: universityId, // <-- The crucial linkage
+    );
+
+    DocumentReference docRef = await faculties.add(newFaculty.toFirestore());
+
+    print('Faculty added with ID: ${docRef.id}');
+    return docRef.id;
+  } catch (e) {
+    print('Error adding faculty: $e');
+    rethrow;
+  }
+}
+Future<void> addDepartment(String departmentName, String facultyId) async {
+  try {
+    final CollectionReference departments = _firestore.collection('departments');
+
+    final Department newDepartment = Department(
+      id: '',
+      name: departmentName,
+      facultyId: facultyId, // <-- The crucial linkage
+    );
+
+    await departments.add(newDepartment.toFirestore());
+    print('Department added successfully.');
+  } catch (e) {
+    print('Error adding department: $e');
+    rethrow;
+  }
+}
+
+  Future<List<Map<String, dynamic>>> getUniversities() async {
+    try {
+      final snapshot = await _firestore.collection('universities').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching universities: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getFacultiesByUniversity(String universityId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('faculties')
+          .where('universityId', isEqualTo: universityId)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+          'universityId': data['universityId'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching faculties: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getDepartmentsByFaculty(String facultyId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('departments')
+          .where('facultyId', isEqualTo: facultyId)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+          'facultyId': data['facultyId'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching departments: $e');
+      rethrow;
     }
   }
 }

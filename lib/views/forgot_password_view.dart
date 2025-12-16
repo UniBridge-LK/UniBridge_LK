@@ -50,7 +50,7 @@ class ForgotPasswordView extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withAlpha(26),
+                    color: AppTheme.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Icon(
@@ -140,11 +140,11 @@ class ForgotPasswordView extends StatelessWidget {
       children: [
         Container(
           padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-            color: AppTheme.successColor.withAlpha(26),
+          decoration: BoxDecoration(
+            color: AppTheme.successColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppTheme.successColor.withAlpha(77),
+              color: AppTheme.successColor.withOpacity(0.3),
             ),
           ),
           child: Column(
@@ -203,11 +203,11 @@ class ForgotPasswordView extends StatelessWidget {
         SizedBox(height: 32),
         Container(
           padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-            color: AppTheme.secondaryColor.withAlpha(26),
+          decoration: BoxDecoration(
+            color: AppTheme.secondaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: AppTheme.secondaryColor.withAlpha(77),
+              color: AppTheme.secondaryColor.withOpacity(0.3),
             ),
           ),
           child: Row(

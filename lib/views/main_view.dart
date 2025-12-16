@@ -18,7 +18,7 @@ class MainView extends GetView<MainController> {
 			const PeopleView(),
 			const ChatsView(),
 			const EventsView(),
-			const ProfileView(),
+			ProfileView(),
 		];
 
 		return Obx(() {

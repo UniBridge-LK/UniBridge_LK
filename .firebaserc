@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "chat-app-91cd3"
+  },
+  "targets": {},
+  "etags": {
+    "chat-app-91cd3": {
+      "extensionInstances": {
+        "firestore-send-email": "6e28f4bf8d3b94064cb00c2221399be2772ae07b00b84a1c6040ac08996c1de9",
+        "firestore-send-email-prev": "6845ce0a8b7a871542b2b468e1e08a374de10074560ba8fea8d907bf79acd04f"
+      }
+    }
+  }
+}

@@ -27,7 +27,7 @@ class ChangePasswordView extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withAlpha(26),
+                color: AppTheme.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.security_rounded, size: 40, color: AppTheme.primaryColor,),

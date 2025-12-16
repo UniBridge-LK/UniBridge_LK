@@ -4,6 +4,7 @@ import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/controllers/profile_controller.dart';
 import 'package:chat_with_aks/controllers/settings_controller.dart';
 import 'package:chat_with_aks/controllers/auth_controller.dart';
+import 'package:chat_with_aks/controllers/change_password_controller.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -34,8 +35,6 @@ class SettingsView extends StatelessWidget {
           return ListView(
             padding: EdgeInsets.all(16),
             children: [
-              // Account Section
-              _buildSectionTitle('Account'),
               _buildSettingsTile(
                 context: context,
                 icon: Icons.lock,
@@ -57,10 +56,7 @@ class SettingsView extends StatelessWidget {
                   );
                 },
               ),
-              SizedBox(height: 24),
-
-              // Display Section
-              _buildSectionTitle('Display'),
+              SizedBox(height: 12),
               Card(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -85,10 +81,7 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 24),
-
-              // Notifications Section
-              _buildSectionTitle('Notifications'),
+              SizedBox(height: 12),
               Card(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -137,10 +130,7 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 24),
-
-              // Premium Section
-              _buildSectionTitle('Upgrade'),
+              SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,
                 icon: Icons.workspace_premium,
@@ -194,10 +184,7 @@ class SettingsView extends StatelessWidget {
                   );
                 },
               ),
-              SizedBox(height: 24),
-
-              // Support Section
-              _buildSectionTitle('Support'),
+              SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,
                 icon: Icons.help,
@@ -207,10 +194,7 @@ class SettingsView extends StatelessWidget {
                   _showContactSupportDialog(context);
                 },
               ),
-              SizedBox(height: 24),
-
-              // Danger Zone
-              _buildSectionTitle('Danger Zone'),
+              SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,
                 icon: Icons.delete_forever,
@@ -311,50 +295,78 @@ class SettingsView extends StatelessWidget {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
-    final oldPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
+    final controller = Get.put(ChangePasswordController());
 
     Get.dialog(
       AlertDialog(
         title: Text('Change Password'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: oldPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+          child: Form(
+            key: controller.formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Obx(() => TextFormField(
+                  controller: controller.currentPasswordController,
+                  obscureText: controller.obscureCurrentPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.obscureCurrentPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: controller.toggleCurrentPasswordVisibility,
+                    ),
                   ),
-                ),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  validator: controller.validateCurrentPassword,
+                )),
+                SizedBox(height: 12),
+                Obx(() => TextFormField(
+                  controller: controller.newPasswordController,
+                  obscureText: controller.obscureNewPassword,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.obscureNewPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: controller.toggleNewPasswordVisibility,
+                    ),
                   ),
-                ),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: confirmPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  validator: controller.validateNewPassword,
+                )),
+                SizedBox(height: 12),
+                Obx(() => TextFormField(
+                  controller: controller.confirmPasswordController,
+                  obscureText: controller.obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: controller.toggleConfirmPasswordVisibility,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  validator: controller.validateConfirmPassword,
+                )),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -362,29 +374,19 @@ class SettingsView extends StatelessWidget {
             onPressed: () => Get.back(),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (newPasswordController.text == confirmPasswordController.text) {
-                Get.back();
-                Get.snackbar(
-                  'Success',
-                  'Password changed successfully',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.green,
-                  colorText: Colors.white,
-                );
-              } else {
-                Get.snackbar(
-                  'Error',
-                  'Passwords do not match',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-              }
-            },
-            child: Text('Change'),
-          ),
+          Obx(() => ElevatedButton(
+            onPressed: controller.isLoading ? null : controller.changePassword,
+            child: controller.isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text('Change'),
+          )),
         ],
       ),
     );

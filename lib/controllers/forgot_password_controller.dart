@@ -32,7 +32,7 @@ class ForgotPasswordController  extends GetxController {
       Get.snackbar(
         'Success', 
         'Password reset email sent to ${emailController.text}',
-        backgroundColor: Colors.green.withAlpha(26),
+        backgroundColor: Colors.green.withOpacity(0.1),
         colorText: Colors.green,
         duration: Duration(seconds: 4),
         );
@@ -41,7 +41,7 @@ class ForgotPasswordController  extends GetxController {
       Get.snackbar(
         'Error', 
         e.toString(),
-        backgroundColor: Colors.red.withAlpha(26),
+        backgroundColor: Colors.red.withOpacity(0.1),
         colorText: Colors.red,
         duration: Duration(seconds: 4),
         );
