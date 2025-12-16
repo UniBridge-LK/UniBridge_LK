@@ -1,3 +1,14 @@
+class UniversityModel {
+  final String id;
+  final String name;
+
+  UniversityModel({required this.id, required this.name});
+
+  factory UniversityModel.fromMap(String id, Map<String, dynamic> map) {
+    final name = (map['name'] ?? '').toString();
+    return UniversityModel(id: id, name: name);
+  }
+}
 // 💡 University Model
 class University {
   final String id;

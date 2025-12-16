@@ -62,11 +62,11 @@ class AppPages {
       ),
     GetPage(
       name: '/home/university',
-      page: () => UniversityView(uniName: Get.arguments['uni'], faculties: Map<String, List<String>>.from(Get.arguments['faculties'] ?? {})),
+      page: () => const UniversityView(),
     ),
     GetPage(
       name: '/home/university/faculty',
-      page: () => FacultyView(),
+      page: () => const FacultyView(),
     ),
     GetPage(
       name: '/home/university/faculty/department',

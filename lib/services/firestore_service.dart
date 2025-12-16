@@ -8,6 +8,7 @@ import 'package:chat_with_aks/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:chat_with_aks/models/thread_model.dart';
+import 'package:chat_with_aks/models/reply_model.dart';
 // firebase_core import removed (not required here)
 
 class FirestoreService {
@@ -497,6 +498,129 @@ class FirestoreService {
     }
   }
 
+  Future<String> addReply(String threadId, ReplyModel reply, {required String appId}) async {
+    try {
+      final data = reply.toMap();
+      data.remove('id');
+
+      final docRef = await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .add(data);
+
+      await docRef.update({'id': docRef.id, 'threadId': threadId});
+
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .update({
+            'replyCount': FieldValue.increment(1),
+            'lastActivity': DateTime.now().millisecondsSinceEpoch,
+          });
+
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Failed to add reply: ${e.toString()}');
+    }
+  }
+
+  Stream<List<ReplyModel>> getRepliesStream(String threadId, {required String appId}) {
+    return _firestore
+        .collection('artifacts')
+        .doc(appId)
+        .collection('public')
+        .doc('data')
+        .collection('forumPosts')
+        .doc(threadId)
+        .collection('replies')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => ReplyModel.fromMap(doc.data())).toList());
+  }
+
+  Future<void> likeReply(String threadId, String replyId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'likes': FieldValue.arrayUnion([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to like reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> unlikeReply(String threadId, String replyId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'likes': FieldValue.arrayRemove([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to unlike reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> editReply(String threadId, String replyId, String newContent, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .update({
+            'content': newContent,
+          });
+    } catch (e) {
+      throw Exception('Failed to edit reply: ${e.toString()}');
+    }
+  }
+
+  Future<void> deleteReply(String threadId, String replyId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .collection('replies')
+          .doc(replyId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to delete reply: ${e.toString()}');
+    }
+  }
+
   Stream<List<ThreadModel>> getThreadsStream({required String appId}) {
     return _firestore
       .collection('artifacts')
@@ -505,9 +629,13 @@ class FirestoreService {
       .doc('data')
       .collection('forumPosts')
       .snapshots()
-      .map((snapshot) =>
-        snapshot.docs.map((doc) => ThreadModel.fromMap(doc.data())).toList()
-      );
+      .map((snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            if ((data['id'] == null) || (data['id'] is String && (data['id'] as String).isEmpty)) {
+              data['id'] = doc.id;
+            }
+            return ThreadModel.fromMap(data);
+          }).toList());
   }
 
   Future<void> updateChatLastMessage(String chatId, MessageModel message) async {
