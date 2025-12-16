@@ -1,17 +1,16 @@
 import 'package:chat_with_aks/controllers/home_controller.dart';
-import 'package:chat_with_aks/controllers/main_controller.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:chat_with_aks/models/mock_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:chat_with_aks/controllers/main_controller.dart';
+import 'package:chat_with_aks/services/persistence_service.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final mainController = Get.find<MainController>();
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -74,10 +73,15 @@ class HomeView extends GetView<HomeController> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: (){
-                        // switch to forum tab
-                        mainController.setIndex(2);
-                        // ensure main route
-                        if(Get.currentRoute != AppRoutes.main) Get.offAllNamed(AppRoutes.main);
+                        // Navigate to Global Forum
+                          final mainCtrl = Get.find<MainController>();
+                          PersistenceService.saveNavState(
+                              tabIndex: 0,
+                            universityPath: null,
+                            facultyPath: null,
+                            departmentPath: null,
+                          );
+                          mainCtrl.setIndex(0);
                       },
                       child: Text('View Global Threads', style: TextStyle(fontWeight: FontWeight.w600)),
                     )

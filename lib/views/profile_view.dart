@@ -4,6 +4,7 @@ import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_with_aks/views/settings_view.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -66,35 +67,67 @@ class ProfileView extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                           child: Column(
                             children: [
-                              // Profile photo with camera icon
-                              Stack(
-                                children: [
-                                  user.photoURL.isNotEmpty
-                                      ? ClipOval(
-                                          child: Image.network(
-                                            user.photoURL,
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        )
-                                      : CircleAvatar(
-                                          radius: 50,
-                                          backgroundColor: Colors.indigo.shade100,
-                                          child: Text(
-                                            user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
-                                            style: TextStyle(
-                                              fontSize: 40,
-                                              color: Colors.indigo,
-                                              fontWeight: FontWeight.bold,
+                              // Profile photo with camera icon - clickable
+                              GestureDetector(
+                                onTap: () {
+                                  Get.dialog(
+                                    Dialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      child: Padding(
+                                        padding: EdgeInsets.all(24),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text('Update Profile Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                            SizedBox(height: 24),
+                                            ListTile(
+                                              leading: Icon(Icons.camera_alt, color: AppTheme.primaryColor),
+                                              title: Text('Take Photo'),
+                                              onTap: () {
+                                                Get.back();
+                                                controller.choosePhoto(ImageSource.camera);
+                                              },
+                                            ),
+                                            ListTile(
+                                              leading: Icon(Icons.photo_library, color: AppTheme.primaryColor),
+                                              title: Text('Upload from Gallery'),
+                                              onTap: () {
+                                                Get.back();
+                                                controller.choosePhoto(ImageSource.gallery);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Stack(
+                                  children: [
+                                    user.photoURL.isNotEmpty
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              user.photoURL,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : CircleAvatar(
+                                            radius: 50,
+                                            backgroundColor: Colors.indigo.shade100,
+                                            child: Text(
+                                              user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
+                                              style: TextStyle(
+                                                fontSize: 40,
+                                                color: Colors.indigo,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: InkWell(
-                                      onTap: controller.uploadPhoto,
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
                                       child: Container(
                                         padding: EdgeInsets.all(8),
                                         decoration: BoxDecoration(
@@ -110,8 +143,8 @@ class ProfileView extends StatelessWidget {
                                         child: Icon(Icons.camera_alt, size: 18, color: Colors.grey[700]),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               SizedBox(height: 20),
                               // Name
@@ -138,7 +171,7 @@ class ProfileView extends StatelessWidget {
                       ),
                     ),
 
-                    // About section - full width
+                    // About section - with bio editor
                     Container(
                       width: double.infinity,
                       margin: EdgeInsets.symmetric(horizontal: 16),
@@ -149,12 +182,69 @@ class ProfileView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'About',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'About',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Get.dialog(
+                                        Dialog(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          child: Padding(
+                                            padding: EdgeInsets.all(24),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text('Edit Bio', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                SizedBox(height: 16),
+                                                Obx(() => TextField(
+                                                  controller: controller.bioController,
+                                                  decoration: InputDecoration(
+                                                    hintText: 'Tell us about yourself...',
+                                                    border: OutlineInputBorder(),
+                                                    helperText: '${controller.bioCount}/200 characters',
+                                                    helperStyle: TextStyle(
+                                                      color: controller.bioCount > 200 ? Colors.red : Colors.grey,
+                                                    ),
+                                                  ),
+                                                  maxLines: 5,
+                                                )),
+                                                SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () => Get.back(),
+                                                      child: Text('Cancel'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        controller.updateProfile();
+                                                        Get.back();
+                                                      },
+                                                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                                                      child: Text('Save'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(Icons.edit, size: 16),
+                                    label: Text('Edit'),
+                                  ),
+                                ],
                               ),
                               SizedBox(height: 12),
                               Text(

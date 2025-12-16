@@ -5,6 +5,7 @@ import 'package:chat_with_aks/views/change_password_view.dart';
 import 'package:chat_with_aks/views/forgot_password_view.dart';
 import 'package:chat_with_aks/views/home_view.dart';
 import 'package:chat_with_aks/views/forum_view.dart';
+import 'package:chat_with_aks/models/forum_models.dart';
 import 'package:chat_with_aks/views/people_view.dart';
 import 'package:chat_with_aks/views/events_view.dart';
 import 'package:chat_with_aks/views/chats_view.dart';
@@ -57,6 +58,43 @@ class AppPages {
         Get.put(ForumController());
       }),
     ),
+    // Scoped forums
+    GetPage(
+      name: '/forum/university',
+      page: () {
+        final args = Get.arguments ?? {};
+        final uniId = args['id'] ?? 'unknown_university';
+        final title = args['title'] ?? 'University Forum';
+        return ForumView(scope: ForumScope.university, scopeId: uniId, scopeTitle: title);
+      },
+      binding: BindingsBuilder(() {
+        Get.put(ForumController());
+      }),
+    ),
+    GetPage(
+      name: '/forum/faculty',
+      page: () {
+        final args = Get.arguments ?? {};
+        final facId = args['id'] ?? 'unknown_faculty';
+        final title = args['title'] ?? 'Faculty Forum';
+        return ForumView(scope: ForumScope.faculty, scopeId: facId, scopeTitle: title);
+      },
+      binding: BindingsBuilder(() {
+        Get.put(ForumController());
+      }),
+    ),
+    GetPage(
+      name: '/forum/department',
+      page: () {
+        final args = Get.arguments ?? {};
+        final depId = args['id'] ?? 'unknown_department';
+        final title = args['title'] ?? 'Department Forum';
+        return ForumView(scope: ForumScope.department, scopeId: depId, scopeTitle: title);
+      },
+      binding: BindingsBuilder(() {
+        Get.put(ForumController());
+      }),
+    ),
     GetPage(name: AppRoutes.usersList, page: () => const PeopleView()),
     GetPage(name: AppRoutes.chat, page: () => const ChatsView()),
     GetPage(name: AppRoutes.notifications, page: () => const EventsView()),
@@ -67,6 +105,8 @@ class AppPages {
         Get.put(MainController());
         // Ensure HomeController is available for the HomeView inside MainView
         Get.put(HomeController());
+        // Ensure ForumController is available for the ForumView tab
+        Get.put(ForumController());
       }),
     ),
     GetPage(

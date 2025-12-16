@@ -8,6 +8,8 @@ import 'package:uuid/uuid.dart';
 import 'package:chat_with_aks/widgets/premium_popup.dart';
 import 'package:chat_with_aks/models/people_data.dart';
 import 'package:chat_with_aks/views/user_profile_view.dart';
+import 'package:chat_with_aks/services/chat_conversations_service.dart';
+import 'package:chat_with_aks/views/chat_thread_view.dart';
 
 class PeopleView extends StatefulWidget {
   const PeopleView({super.key});
@@ -225,6 +227,26 @@ class _PeopleViewState extends State<PeopleView> {
                                   ),
                                 ),
                                 child: Text('Connect'),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final selfId = auth.user?.uid;
+                                  if (selfId == null) {
+                                    Get.snackbar('Sign in required', 'Please log in to start a chat');
+                                    return;
+                                  }
+                                  final otherId = person.id;
+                                  final chatId = await ChatConversationsService.getOrCreateChat(selfId, otherId);
+                                  Get.to(() => ChatThreadView(chatId: chatId, selfId: selfId, otherId: otherId));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: const Text('Message'),
                               ),
                             ],
                           ),

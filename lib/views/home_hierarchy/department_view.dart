@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/controllers/main_controller.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
 
 class DepartmentView extends StatelessWidget {
   const DepartmentView({super.key});
@@ -25,20 +23,14 @@ class DepartmentView extends StatelessWidget {
           SizedBox(height:16),
           Text('Threads for specific departments are centralized in the Forum. Use the button below to view or create threads.'),
           SizedBox(height:24),
-            ElevatedButton(
+            ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
             onPressed: (){
-              try{
-                final mc = Get.find<MainController>();
-                mc.setIndex(2);
-                if(Get.currentRoute != '/main' && Get.currentRoute != AppRoutes.main){
-                  Get.offAllNamed(AppRoutes.main);
-                }
-              }catch(e){
-                // ignore
-              }
+              final depId = '$uni-$faculty-$department'.replaceAll(' ', '_');
+              Get.toNamed('/forum/department', arguments: {'id': depId, 'title': '$department Forum'});
             },
-            child: Text('Go to Forum'))
+            icon: Icon(Icons.forum_outlined),
+            label: Text('View Department Forum'))
         ],),
       ),
     );

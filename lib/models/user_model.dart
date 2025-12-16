@@ -6,6 +6,7 @@ class UserModel {
   final String displayName;
   final String photoURL;
   final bool isOnline;
+  final bool premiumStatus;
   final String theme;
   final bool notificationsEnabled;
   final String? bio;
@@ -19,6 +20,7 @@ class UserModel {
     required this.displayName,
     this.photoURL = '',
     this.isOnline = false,
+    this.premiumStatus = false,
     this.theme = 'light',
     this.notificationsEnabled = true,
     this.bio,
@@ -34,6 +36,7 @@ class UserModel {
       'displayName': displayName,
       'photoURL': photoURL,
       'isOnline': isOnline,
+      'premiumStatus': premiumStatus,
       'theme': theme,
       'notificationsEnabled': notificationsEnabled,
       'bio': bio,
@@ -63,6 +66,7 @@ class UserModel {
       displayName: map['displayName'] ?? '' ,
       photoURL: map['photoURL'] ?? '',
       isOnline: map['isOnline'] ?? false,
+      premiumStatus: map['premiumStatus'] ?? false,
       theme: map['theme'] ?? 'light',
       notificationsEnabled: map['notificationsEnabled'] ?? true,
       bio: map['bio'] as String?,
@@ -78,6 +82,7 @@ class UserModel {
     String? displayName,
     String? photoURL,
     bool? isOnline,
+    bool? premiumStatus,
     String? theme,
     bool? notificationsEnabled,
     String? bio,
@@ -91,6 +96,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
       isOnline: isOnline ?? this.isOnline,
+      premiumStatus: premiumStatus ?? this.premiumStatus,
       theme: theme ?? this.theme,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       bio: bio ?? this.bio,
