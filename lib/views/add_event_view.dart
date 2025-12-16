@@ -413,7 +413,7 @@ class _AddEventViewState extends State<AddEventView> {
                     labelText: 'Description',
                     hintText: 'Describe the event, agenda, and expectations...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    prefixIcon: const Icon(Icons.description),
+                    
                   ),
                   maxLines: 5,
                   validator: (value) {

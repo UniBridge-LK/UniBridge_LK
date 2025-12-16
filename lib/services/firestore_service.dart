@@ -621,6 +621,40 @@ class FirestoreService {
     }
   }
 
+  Future<void> likeThread(String threadId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .update({
+            'likes': FieldValue.arrayUnion([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to like thread: ${e.toString()}');
+    }
+  }
+
+  Future<void> unlikeThread(String threadId, String userId, {required String appId}) async {
+    try {
+      await _firestore
+          .collection('artifacts')
+          .doc(appId)
+          .collection('public')
+          .doc('data')
+          .collection('forumPosts')
+          .doc(threadId)
+          .update({
+            'likes': FieldValue.arrayRemove([userId]),
+          });
+    } catch (e) {
+      throw Exception('Failed to unlike thread: ${e.toString()}');
+    }
+  }
+
   Stream<List<ThreadModel>> getThreadsStream({required String appId}) {
     return _firestore
       .collection('artifacts')

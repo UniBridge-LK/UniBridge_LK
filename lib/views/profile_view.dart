@@ -62,53 +62,28 @@ class ProfileView extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                           child: Column(
                             children: [
-                              // Profile photo with camera icon
-                              Stack(
-                                children: [
-                                  user.photoURL.isNotEmpty
-                                      ? ClipOval(
-                                          child: Image.network(
-                                            user.photoURL,
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        )
-                                      : CircleAvatar(
-                                          radius: 50,
-                                          backgroundColor: Colors.indigo.shade100,
-                                          child: Text(
-                                            user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
-                                            style: TextStyle(
-                                              fontSize: 40,
-                                              color: Colors.indigo,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                              // Profile photo
+                              user.photoURL.isNotEmpty
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        user.photoURL,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 50,
+                                      backgroundColor: Colors.indigo.shade100,
+                                      child: Text(
+                                        user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
+                                        style: TextStyle(
+                                          fontSize: 40,
+                                          color: Colors.indigo,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: InkWell(
-                                      onTap: controller.uploadPhoto,
-                                      child: Container(
-                                        padding: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              blurRadius: 4,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(Icons.camera_alt, size: 18, color: Colors.grey[700]),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
                               SizedBox(height: 20),
                               // Name
                               if (!isEditing)
@@ -218,8 +193,8 @@ class ProfileView extends StatelessWidget {
                       ),
                     SizedBox(height: 16),
 
-                    // User Details card - full width (only show if university, faculty, and department are not empty)
-                    if (user.universityName.isNotEmpty && user.faculty.isNotEmpty && user.department.isNotEmpty)
+                    // User Details card - full width (only show if at least one field exists)
+                    if (user.accountType.isNotEmpty || user.universityName.isNotEmpty || user.faculty.isNotEmpty || user.department.isNotEmpty)
                       Container(
                         width: double.infinity,
                         margin: EdgeInsets.symmetric(horizontal: 16),
@@ -239,17 +214,41 @@ class ProfileView extends StatelessWidget {
                                 ),
                               ),
                               Divider(height: 1),
-                              ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: Icon(Icons.school, color: AppTheme.primaryColor, size: 24),
-                                title: Text(
-                                  'University',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              if (user.accountType.isNotEmpty) ...[
+                                ListTile(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  leading: Icon(Icons.account_circle, color: AppTheme.primaryColor, size: 24),
+                                  title: Text(
+                                    'User Role',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      user.accountType[0].toUpperCase() + user.accountType.substring(1),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                subtitle: Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    user.universityName,
+                                Divider(height: 1),
+                              ],
+                              
+                              if (user.universityName.isNotEmpty) ...[
+                                ListTile(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  leading: Icon(Icons.school, color: AppTheme.primaryColor, size: 24),
+                                  title: Text(
+                                    'University',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      user.universityName,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -258,18 +257,21 @@ class ProfileView extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              Divider(height: 1),
-                              ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: Icon(Icons.business, color: AppTheme.primaryColor, size: 24),
-                                title: Text(
-                                  'Faculty',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                ),
-                                subtitle: Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    user.faculty,
+                                Divider(height: 1),
+                              ],
+
+                              if (user.faculty.isNotEmpty) ...[
+                                ListTile(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  leading: Icon(Icons.business, color: AppTheme.primaryColor, size: 24),
+                                  title: Text(
+                                    'Faculty',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      user.faculty,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -278,26 +280,30 @@ class ProfileView extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              Divider(height: 1),
-                              ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: Icon(Icons.book, color: AppTheme.primaryColor, size: 24),
-                                title: Text(
-                                  'Department',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                ),
-                                subtitle: Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    user.department,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                                Divider(height: 1),
+                              ],
+                              
+                              if (user.department.isNotEmpty) ...[
+                                ListTile(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  leading: Icon(Icons.book, color: AppTheme.primaryColor, size: 24),
+                                  title: Text(
+                                    'Department',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      user.department,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ),
