@@ -81,6 +81,19 @@ class FirestoreService {
     }
   }
 
+
+  Future<void> addUserReport({required String reporterId, required String reportedUserId, required String reason}) async {
+    try {
+      await _firestore.collection('reports').doc('users').collection('items').add({
+        'reporterId': reporterId,
+        'reportedUserId': reportedUserId,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to add report: ${e.toString()}');
+    }
+  }
   Stream<List<UserModel>> getUsersStream() {
     return _firestore.collection('users').snapshots().map((snapshot) =>
       snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList()

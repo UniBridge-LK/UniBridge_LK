@@ -466,15 +466,8 @@ class SettingsView extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Get.back();
-              // In a real app, this would delete the account from Firestore
-              Get.snackbar(
-                'Account Deleted',
-                'Your account has been deleted (mock)',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
-              );
-              await auth.signOut();
+              // Call the actual delete account method
+              await auth.deleteAccount();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

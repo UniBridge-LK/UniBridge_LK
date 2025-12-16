@@ -90,9 +90,9 @@ class _VerifyOtpViewState extends State<VerifyOtpView> {
               ElevatedButton(
                 onPressed: () {
                   Get.back(); // Close dialog
-                  Get.offAllNamed(AppRoutes.profile); // Navigate to profile
+                  Get.offAllNamed(AppRoutes.main); // Navigate to home
                 },
-                child: const Text('Continue to Profile'),
+                child: const Text('Continue to Home'),
               ),
             ],
           ),
