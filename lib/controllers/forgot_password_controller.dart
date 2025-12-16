@@ -63,7 +63,7 @@ class ForgotPasswordController  extends GetxController {
     if (value == null || value.isEmpty) {
       return 'Email is required';
     }
-    if (!GetUtils.isEmail(value!)) {
+    if (!GetUtils.isEmail(value)) {
       return 'Enter a valid email address';
     }
     return null;
