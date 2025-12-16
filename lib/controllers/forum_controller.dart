@@ -148,6 +148,20 @@ class ForumController extends GetxController {
     }
   }
 
+  Future<void> toggleLikeThread(String threadId, bool isLiked) async {
+    try {
+      final userId = currentUserId;
+      if (isLiked) {
+        await _fs.unlikeThread(threadId, userId, appId: appId);
+      } else {
+        await _fs.likeThread(threadId, userId, appId: appId);
+      }
+    } catch (e) {
+      debugPrint('Error toggling thread like: $e');
+      Get.snackbar('Error', 'Failed to update like: $e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   @override
   void onClose() {
     for (final sub in _replySubs.values) {

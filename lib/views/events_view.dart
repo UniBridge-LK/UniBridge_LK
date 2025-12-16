@@ -144,18 +144,7 @@ class EventsView extends StatelessWidget {
                             event.title,
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            event.category,
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-                          ),
-                        ),
+                        ),                        
                       ],
                     ),
                     SizedBox(height: 12),

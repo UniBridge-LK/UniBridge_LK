@@ -109,8 +109,6 @@ class _ForumViewState extends State<ForumView> {
               SizedBox(height: 4),
               Text(thread.content, style: TextStyle(fontSize: 14, color: Colors.grey[800])),
               SizedBox(height: 12),
-              Text('Replies', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              SizedBox(height: 8),
               Expanded(
                 child: Obx(() {
                   final replyList = controller.replies[thread.id] ?? [];
@@ -122,113 +120,154 @@ class _ForumViewState extends State<ForumView> {
                       ),
                     );
                   }
-                  return ListView.separated(
-                    itemCount: replyList.length,
-                    separatorBuilder: (_, __) => Divider(height: 16),
-                    itemBuilder: (_, idx) {
-                      final reply = replyList[idx];
-                      final isReplyOwner = reply.userId == controller.currentUserId;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Text(reply.author, style: TextStyle(fontWeight: FontWeight.w600)),
-                                    if (isReplyOwner) ...[
-                                      SizedBox(width: 8),
-                                      PopupMenuButton<String>(
-                                        onSelected: (v) {
-                                          if (v == 'edit') {
-                                            final contentCtl = TextEditingController(text: reply.content);
-                                            Get.defaultDialog(
-                                              title: 'Edit Reply',
-                                              content: Padding(
-                                                padding: EdgeInsets.all(16),
-                                                child: TextField(
-                                                  controller: contentCtl,
-                                                  decoration: InputDecoration(labelText: 'Content'),
-                                                  maxLines: 4,
-                                                ),
-                                              ),
-                                              confirm: TextButton(
-                                                onPressed: () async {
-                                                  final newContent = contentCtl.text.trim();
-                                                  if (newContent.isNotEmpty) {
-                                                    Get.back();
-                                                    await controller.editReply(thread.id, reply.id, newContent);
-                                                  } else {
-                                                    Get.snackbar('Error', 'Content cannot be empty');
-                                                  }
-                                                },
-                                                child: Text('Save'),
-                                              ),
-                                              cancel: TextButton(
-                                                onPressed: () => Get.back(),
-                                                child: Text('Cancel'),
-                                              ),
-                                            );
-                                          } else if (v == 'delete') {
-                                            Get.defaultDialog(
-                                              title: 'Delete Reply',
-                                              middleText: 'Are you sure you want to delete this reply?',
-                                              confirm: TextButton(
-                                                onPressed: () async {
-                                                  Get.back();
-                                                  await controller.deleteReply(thread.id, reply.id);
-                                                },
-                                                child: Text('Delete', style: TextStyle(color: Colors.red)),
-                                              ),
-                                              cancel: TextButton(
-                                                onPressed: () => Get.back(),
-                                                child: Text('Cancel'),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        itemBuilder: (_) => [
-                                          PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 16), SizedBox(width: 8), Text('Edit')])),
-                                          PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 16, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]))
-                                        ],
-                                        icon: Icon(Icons.more_vert, size: 16, color: Colors.grey[600]),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                    ],
-                                  ],
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          '${replyList.length} ${replyList.length == 1 ? 'reply' : 'replies'}',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: replyList.length,
+                          itemBuilder: (_, idx) {
+                            final reply = replyList[idx];
+                            final isReplyOwner = reply.userId == controller.currentUserId;
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 16),
+                              child: Container(
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  final isLiked = reply.likes.contains(controller.currentUserId);
-                                  controller.toggleLikeReply(thread.id, reply.id, isLiked);
-                                },
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      reply.likes.contains(controller.currentUserId) ? Icons.favorite : Icons.favorite_border,
-                                      color: Colors.red,
-                                      size: 18,
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          reply.author,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        if (isReplyOwner)
+                                          PopupMenuButton<String>(
+                                            onSelected: (v) {
+                                              if (v == 'edit') {
+                                                final contentCtl = TextEditingController(text: reply.content);
+                                                Get.defaultDialog(
+                                                  title: 'Edit Reply',
+                                                  content: Padding(
+                                                    padding: EdgeInsets.all(16),
+                                                    child: TextField(
+                                                      controller: contentCtl,
+                                                      decoration: InputDecoration(labelText: 'Content'),
+                                                      maxLines: 4,
+                                                    ),
+                                                  ),
+                                                  confirm: TextButton(
+                                                    onPressed: () async {
+                                                      final newContent = contentCtl.text.trim();
+                                                      if (newContent.isNotEmpty) {
+                                                        Get.back();
+                                                        await controller.editReply(thread.id, reply.id, newContent);
+                                                      } else {
+                                                        Get.snackbar('Error', 'Content cannot be empty');
+                                                      }
+                                                    },
+                                                    child: Text('Save'),
+                                                  ),
+                                                  cancel: TextButton(
+                                                    onPressed: () => Get.back(),
+                                                    child: Text('Cancel'),
+                                                  ),
+                                                );
+                                              } else if (v == 'delete') {
+                                                Get.defaultDialog(
+                                                  title: 'Delete Reply',
+                                                  middleText: 'Are you sure you want to delete this reply?',
+                                                  confirm: TextButton(
+                                                    onPressed: () async {
+                                                      Get.back();
+                                                      await controller.deleteReply(thread.id, reply.id);
+                                                    },
+                                                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                  cancel: TextButton(
+                                                    onPressed: () => Get.back(),
+                                                    child: Text('Cancel'),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            itemBuilder: (_) => [
+                                              PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 16), SizedBox(width: 8), Text('Edit')])),
+                                              PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 16, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]))
+                                            ],
+                                            icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                      ],
                                     ),
-                                    SizedBox(width: 4),
+                                    SizedBox(height: 4),
                                     Text(
-                                      reply.likes.length.toString(),
-                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      _formatTime(reply.timestamp),
+                                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                    ),
+                                    SizedBox(height: 12),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            reply.content,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.grey[700],
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        GestureDetector(
+                                          onTap: () {
+                                            final isLiked = reply.likes.contains(controller.currentUserId);
+                                            controller.toggleLikeReply(thread.id, reply.id, isLiked);
+                                          },
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                reply.likes.contains(controller.currentUserId) ? Icons.favorite : Icons.favorite_border,
+                                                color: Colors.red,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                reply.likes.length.toString(),
+                                                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 4),
-                          Text(reply.content, style: TextStyle(color: Colors.grey[800])),
-                          SizedBox(height: 4),
-                          Text(_formatTime(reply.timestamp), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                        ],
-                      );
-                    },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 }),
               ),
@@ -434,6 +473,27 @@ class _ForumViewState extends State<ForumView> {
                             ),
                           ),
                           SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              final isLiked = thread.likes.contains(controller.currentUserId);
+                              controller.toggleLikeThread(thread.id, isLiked);
+                            },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  thread.likes.contains(controller.currentUserId) ? Icons.favorite : Icons.favorite_border,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  thread.likes.length.toString(),
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 16),
                           GestureDetector(
                             onTap: () => _openThread(thread),
                             child: Row(

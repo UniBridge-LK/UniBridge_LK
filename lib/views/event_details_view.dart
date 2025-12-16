@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/models/event_model.dart';
 import 'package:chat_with_aks/views/add_event_view.dart';
+import 'package:chat_with_aks/views/user_profile_view.dart';
+import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -161,21 +163,7 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _currentEvent.category,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue.shade900,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      
                     ],
                   ),
                   SizedBox(height: 16),
@@ -193,20 +181,60 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                   SizedBox(height: 24),
 
                   // Hosted By
+                  if (_currentEvent.host.isNotEmpty) ...[
+                    Text(
+                      'Hosted by',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.business, color: Colors.blue.shade700, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _currentEvent.host,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+
+                  // Created By
                   Text(
-                    'Hosted by',
+                    'Created by',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                   SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () {
-                      // Navigate to host profile
-                      // For now, just show a snackbar
-                      Get.snackbar(
-                        'Profile',
-                        'View ${_currentEvent.hostName} profile',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
+                    onTap: () async {
+                      // Navigate to creator profile
+                      try {
+                        final firestoreService = FirestoreService();
+                        final user = await firestoreService.getUser(_currentEvent.hostId);
+                        if (user != null) {
+                          Get.to(() => UserProfileView(), arguments: user);
+                        } else {
+                          Get.snackbar('Error', 'User profile not found',
+                              snackPosition: SnackPosition.BOTTOM);
+                        }
+                      } catch (e) {
+                        Get.snackbar('Error', 'Failed to load profile',
+                            snackPosition: SnackPosition.BOTTOM);
+                      }
                     },
                     child: Container(
                       padding: EdgeInsets.all(12),
@@ -229,26 +257,15 @@ class _EventDetailsViewState extends State<EventDetailsView> {
                           ),
                           SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _currentEvent.host,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  _currentEvent.hostName,
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                            child: Text(
+                              _currentEvent.hostName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Icon(Icons.arrow_forward, color: Colors.grey),
                         ],
                       ),
                     ),
