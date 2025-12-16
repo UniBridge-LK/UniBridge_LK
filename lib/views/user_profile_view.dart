@@ -3,6 +3,8 @@ import 'package:chat_with_aks/theme/app_theme.dart';
 import 'package:chat_with_aks/models/people_data.dart';
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_with_aks/services/firestore_service.dart';
 
 class UserProfileView extends StatelessWidget {
   final PersonData? person;
@@ -73,12 +75,13 @@ class UserProfileView extends StatelessWidget {
             child: SingleChildScrollView(
               padding: EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Profile card
                   Card(
-                    elevation: 2,
+                    elevation: 2,                    
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),                      
                       child: Column(
                         children: [
                           // Profile photo
@@ -133,7 +136,6 @@ class UserProfileView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
                   // About section (only if bio is present)
                   if (about.isNotEmpty) ...[
                     SizedBox(height: 16),
@@ -262,6 +264,106 @@ class UserProfileView extends StatelessWidget {
                       ),
                     ),
                   ],
+                  SizedBox(height: 26),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.75,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final ctl = TextEditingController();
+                            await Get.dialog(
+                              AlertDialog(
+                                title: Text('Report User'),
+                                content: TextField(
+                                  controller: ctl,
+                                  maxLines: 4,
+                                  decoration: InputDecoration(
+                                    labelText: 'Reason',
+                                    hintText: 'Describe why you are reporting',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(onPressed: ()=>Get.back(), child: Text('Cancel')),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      final reason = ctl.text.trim();
+                                      if (reason.isEmpty) {
+                                        Get.snackbar('Error', 'Please provide a reason');
+                                        return;
+                                      }
+                                      Get.back();
+                                      try {
+                                        final reporterId = FirebaseAuth.instance.currentUser?.uid;
+                                        final reportedUserId = selectedUser?.id ?? displayPerson?.id ?? '';
+                                        if (reporterId == null || reportedUserId.isEmpty) {
+                                          Get.snackbar('Error', 'Unable to submit report');
+                                          return;
+                                        }
+                                        await FirestoreService().addUserReport(
+                                          reporterId: reporterId,
+                                          reportedUserId: reportedUserId,
+                                          reason: reason,
+                                        );
+                                        Get.snackbar('Reported', 'Your report has been submitted');
+                                      } catch (e) {
+                                        Get.snackbar('Error', 'Failed to submit report');
+                                      }
+                                    },
+                                    child: Text('Submit'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: Colors.red.shade400),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.flag_outlined, color: Colors.red.shade600, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Report User',
+                                style: TextStyle(color: Colors.red.shade600, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.75,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // TODO: Implement block logic later
+                            Get.snackbar('Blocked', 'User has been blocked (UI only)');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade600,
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.block, color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Block User',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 24),
                 ],
               ),
