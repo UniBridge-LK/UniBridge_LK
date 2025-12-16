@@ -7,7 +7,10 @@ class ChatCloudService {
   static final _db = FirebaseFirestore.instance;
 
   static Future<void> send(ChatMessage msg) async {
-    // Write message with server timestamp
+    // Update message status to delivered before sending
+    msg.status = ChatMessageStatus.delivered;
+    
+    // Write message with server timestamp and delivered status
     await _db
         .collection('chats')
         .doc(msg.chatId)

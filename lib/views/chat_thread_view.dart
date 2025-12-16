@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/chat_controller.dart';
 import '../theme/app_theme.dart';
+import '../services/firestore_service.dart';
+import '../models/user_model.dart';
 
 class ChatThreadView extends StatelessWidget {
   final String chatId;
@@ -17,7 +19,13 @@ class ChatThreadView extends StatelessWidget {
     controller.init(chatId: chatId, selfId: selfId, otherId: otherId);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: FutureBuilder<UserModel?>(
+          future: FirestoreService().getUser(otherId),
+          builder: (context, snap) {
+            final userName = snap.data?.displayName ?? otherId;
+            return Text(userName);
+          },
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,

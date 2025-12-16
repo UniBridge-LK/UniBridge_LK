@@ -22,7 +22,8 @@ class ChatSyncService {
     final pending = ChatHiveService.getPendingQueue();
     for (final msg in pending) {
       try {
-        await ChatCloudService.send(msg..status = ChatMessageStatus.sent);
+        await ChatCloudService.send(msg);
+        msg.status = ChatMessageStatus.delivered;
         await ChatHiveService.upsertMessage(msg);
         await ChatHiveService.removeFromPending(msg.id);
       } catch (_) {
@@ -39,6 +40,9 @@ class ChatSyncService {
     } else {
       try {
         await ChatCloudService.send(msg);
+        // Update local cache with delivered status after successful send
+        msg.status = ChatMessageStatus.delivered;
+        await ChatHiveService.upsertMessage(msg);
       } catch (_) {
         await ChatHiveService.enqueuePending(msg);
       }
