@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:chat_with_aks/routes/app_routes.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:chat_with_aks/controllers/auth_controller.dart';
@@ -22,6 +23,7 @@ class _PeopleViewState extends State<PeopleView> {
   final auth = Get.find<AuthController>();
   final uuid = Uuid();
   String query = '';
+  final RxBool _refreshTrigger = false.obs;
 
   bool isPremiumUser() {
     // TODO: Set to false to enable premium check, true to bypass for testing
@@ -105,24 +107,28 @@ class _PeopleViewState extends State<PeopleView> {
               ),
               SizedBox(width: 12),
               // Dynamic button based on connection status
-              StreamBuilder<String>(
-                stream: _fs.getConnectionStatusStream(currentUserId, person.id),
-                builder: (context, snapshot) {
-                  final status = snapshot.data ?? 'none';
+              Obx(() {
+                // Rebuild when refresh is triggered
+                _refreshTrigger.value; // access to rebuild
+                return StreamBuilder<String>(
+                  stream: _fs.getConnectionStatusStream(currentUserId, person.id),
+                  builder: (context, snapshot) {
+                    final status = snapshot.data ?? 'none';
                   
                   if (status == 'connected') {
                     // Show Connected button for connected users
                     return ElevatedButton.icon(
                       onPressed: () {
-                        // Navigate to chats tab
-                        Get.toNamed('/chats');
+                        // Navigate to Main with Chats bottom tab selected
+                        Get.toNamed(AppRoutes.main, arguments: {'bottomIndex': 2, 'chatsTab': 0});
                       },
-                      icon: Icon(Icons.check_circle, size: 18),
-                      label: Text('Connected'),
+                      label: Text('Connected', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -131,7 +137,7 @@ class _PeopleViewState extends State<PeopleView> {
                   } else if (status == 'pending_sent') {
                     // Show Request Sent label (disabled)
                     return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(8),
@@ -141,7 +147,7 @@ class _PeopleViewState extends State<PeopleView> {
                         'Request Sent',
                         style: TextStyle(
                           color: Colors.grey.shade600,
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -150,11 +156,11 @@ class _PeopleViewState extends State<PeopleView> {
                     // Show Pending Request label with tap to go to Requests tab
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to Chats view, Requests tab
-                        Get.toNamed('/chats', arguments: 1); // Tab index 1 = Requests
+                        // Navigate to Main with Chats bottom tab and Requests inner tab
+                        // Get.toNamed(AppRoutes.chat, arguments: {'bottomIndex': 2, 'chatsTab': 1});
                       },
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -163,13 +169,12 @@ class _PeopleViewState extends State<PeopleView> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.notifications_active, size: 18, color: AppTheme.primaryColor),
                             SizedBox(width: 4),
                             Text(
                               'Pending Request',
                               style: TextStyle(
                                 color: AppTheme.primaryColor,
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -199,7 +204,8 @@ class _PeopleViewState extends State<PeopleView> {
                     );
                   }
                 },
-              ),
+              );
+              }),
             ],
           ),
         ),
@@ -305,6 +311,8 @@ class _PeopleViewState extends State<PeopleView> {
                       );
                       try { 
                         await _fs.sendFriendRequest(req); 
+                        // Trigger UI refresh to show updated status immediately
+                        _refreshTrigger.value = !_refreshTrigger.value;
                         Get.snackbar(
                           'Success', 
                           'Connection request sent to ${person.displayName}',
