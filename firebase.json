@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 {
   "flutter": {
     "platforms": {
@@ -38,6 +37,3 @@
     }
   ]
 }
-=======
-{"flutter":{"platforms":{"android":{"default":{"projectId":"chat-app-91cd3","appId":"1:651672547636:android:c4782adf30c7c7365cb561","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"chat-app-91cd3","configurations":{"android":"1:651672547636:android:c4782adf30c7c7365cb561"}}}}}}
->>>>>>> c1195b4ed64a5f9adc5e526f6db1b46918263aff
