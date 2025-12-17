@@ -22,6 +22,8 @@ import 'package:chat_with_aks/views/home_hierarchy/university_view.dart';
 import 'package:chat_with_aks/views/home_hierarchy/faculty_view.dart';
 import 'package:chat_with_aks/views/home_hierarchy/department_view.dart';
 import 'package:chat_with_aks/views/user_profile_view.dart';
+import 'package:chat_with_aks/views/onboarding_view.dart';
+import 'package:chat_with_aks/views/help_view.dart';
 
 
 
@@ -102,6 +104,14 @@ class AppPages {
         Get.put(ProfileController());
       })
       ),
+    GetPage(
+      name: AppRoutes.onboarding,
+      page: () => const OnboardingView(),
+    ),
+    GetPage(
+      name: AppRoutes.help,
+      page: () => const HelpView(),
+    ),
     // GetPage(
     //   name: AppRoutes.chat, 
     //   page: () => const ChatView(),

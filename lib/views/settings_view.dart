@@ -5,6 +5,7 @@ import 'package:chat_with_aks/controllers/profile_controller.dart';
 import 'package:chat_with_aks/controllers/settings_controller.dart';
 import 'package:chat_with_aks/controllers/auth_controller.dart';
 import 'package:chat_with_aks/controllers/change_password_controller.dart';
+import 'package:chat_with_aks/routes/app_routes.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -187,13 +188,33 @@ class SettingsView extends StatelessWidget {
               SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,
-                icon: Icons.help,
-                title: 'Contact Support',
-                subtitle: 'Get help and report issues',
+                icon: Icons.school,
+                title: 'View Tutorial',
+                subtitle: 'Watch the onboarding guide again',
                 onTap: () {
-                  _showContactSupportDialog(context);
+                  Get.toNamed(AppRoutes.onboarding);
                 },
               ),
+              SizedBox(height: 12),
+              _buildSettingsTile(
+                context: context,
+                icon: Icons.help_outline,
+                title: 'Help & Support',
+                subtitle: 'View FAQs and troubleshooting guides',
+                onTap: () {
+                  Get.toNamed(AppRoutes.help);
+                },
+              ),
+              // SizedBox(height: 12),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: Icons.help,
+              //   title: 'Contact Support',
+              //   subtitle: 'Get help and report issues',
+              //   onTap: () {
+              //     _showContactSupportDialog(context);
+              //   },
+              // ),
               SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,
