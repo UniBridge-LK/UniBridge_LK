@@ -24,6 +24,7 @@ class _ChatsViewState extends State<ChatsView> with SingleTickerProviderStateMix
   final _fs = FirestoreService();
   late final AuthController _auth;
   final _uuid = const Uuid();
+  final Map<String, UserModel?> _userCache = {};
 
   @override
   void initState() {
@@ -92,9 +93,16 @@ class _ChatsViewState extends State<ChatsView> with SingleTickerProviderStateMix
             final timeText = _formatTime(c.lastMessageTime);
             return FutureBuilder<UserModel?>(
               future: _fs.getUser(otherId),
+              initialData: _userCache[otherId],
               builder: (context, userSnap) {
-                final userName = userSnap.data?.displayName ?? otherId;
-                final firstLetter = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
+                final user = userSnap.data;
+                if (user != null) {
+                  _userCache[otherId] = user; // Cache for instant reuse
+                }
+                final cachedName = _userCache[otherId]?.displayName;
+                final userName = user?.displayName ?? cachedName ?? '';
+                final displayName = userName.isNotEmpty ? userName : 'Loading...';
+                final firstLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
                 
                 return ListTile(
                   onTap: () async {
@@ -117,7 +125,7 @@ class _ChatsViewState extends State<ChatsView> with SingleTickerProviderStateMix
                     children: [
                       Expanded(
                         child: Text(
-                          userName,
+                          displayName,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -210,8 +218,14 @@ class _ChatsViewState extends State<ChatsView> with SingleTickerProviderStateMix
             final senderId = r.senderId;
             return FutureBuilder<UserModel?>(
               future: _fs.getUser(senderId),
+              initialData: _userCache[senderId],
               builder: (context, userSnap) {
-                final senderName = userSnap.data?.displayName ?? senderId;
+                final sender = userSnap.data;
+                if (sender != null) {
+                  _userCache[senderId] = sender;
+                }
+                final cachedName = _userCache[senderId]?.displayName;
+                final senderName = sender?.displayName ?? cachedName ?? 'Loading...';
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(

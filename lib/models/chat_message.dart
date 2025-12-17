@@ -11,6 +11,10 @@ class ChatMessage {
   final Timestamp? timestamp; // Nullable to support server timestamp placeholder
   ChatMessageStatus status;
   final bool isSystemMessage; // Flag for system-generated messages
+  final bool isEdited;
+  final bool isDeleted;
+  final int? editedAt;
+  final int? deletedAt;
 
   ChatMessage({
     required this.id,
@@ -21,6 +25,10 @@ class ChatMessage {
     this.timestamp, // Optional: null until server assigns timestamp
     required this.status,
     this.isSystemMessage = false,
+    this.isEdited = false,
+    this.isDeleted = false,
+    this.editedAt,
+    this.deletedAt,
   });
 
   Map<String, dynamic> toMap({bool forFirestore = false}) {
@@ -35,6 +43,10 @@ class ChatMessage {
           : (timestamp?.millisecondsSinceEpoch ?? Timestamp.now().millisecondsSinceEpoch),
       'status': status.name,
       'isSystemMessage': isSystemMessage,
+      'isEdited': isEdited,
+      'isDeleted': isDeleted,
+      'editedAt': editedAt,
+      'deletedAt': deletedAt,
     };
   }
 
@@ -61,6 +73,10 @@ class ChatMessage {
         orElse: () => ChatMessageStatus.sent,
       ),
       isSystemMessage: m['isSystemMessage'] ?? false,
+      isEdited: m['isEdited'] ?? false,
+      isDeleted: m['isDeleted'] ?? false,
+      editedAt: m['editedAt'],
+      deletedAt: m['deletedAt'],
     );
   }
 }

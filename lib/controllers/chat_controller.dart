@@ -77,4 +77,94 @@ class ChatController extends GetxController {
       isSyncing.value = false;
     }
   }
+
+  Future<void> deleteMessage(ChatMessage msg) async {
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final updated = ChatMessage(
+        id: msg.id,
+        chatId: msg.chatId,
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        content: '',
+        timestamp: msg.timestamp,
+        status: msg.status,
+        isSystemMessage: msg.isSystemMessage,
+        isEdited: msg.isEdited,
+        isDeleted: true,
+        editedAt: msg.editedAt,
+        deletedAt: now,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc(msg.id)
+          .set({
+            'content': '',
+            'isDeleted': true,
+            'deletedAt': now,
+          }, SetOptions(merge: true));
+
+      await ChatHiveService.upsertMessage(updated);
+      final idx = messages.indexWhere((m) => m.id == msg.id);
+      if (idx >= 0) {
+        messages[idx] = updated;
+      }
+
+      if (messages.isNotEmpty && messages.last.id == msg.id) {
+        await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
+          'lastMessage': 'Message deleted',
+          'lastMessageTime': now,
+          'lastMessageSenderId': msg.senderId,
+          'updatedAt': now,
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  Future<void> editMessage(ChatMessage msg, String newContent) async {
+    final trimmed = newContent.trim();
+    if (trimmed.isEmpty) return;
+    final updated = ChatMessage(
+      id: msg.id,
+      chatId: msg.chatId,
+      senderId: msg.senderId,
+      receiverId: msg.receiverId,
+      content: trimmed,
+      timestamp: msg.timestamp,
+      status: msg.status,
+      isSystemMessage: msg.isSystemMessage,
+      isEdited: true,
+      editedAt: Timestamp.now().millisecondsSinceEpoch,
+    );
+    try {
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc(msg.id)
+          .update({'content': trimmed, 'editedAt': updated.editedAt, 'isEdited': true});
+      await ChatHiveService.upsertMessage(updated);
+      final idx = messages.indexWhere((m) => m.id == msg.id);
+      if (idx >= 0) {
+        messages[idx] = updated;
+      }
+      // If this is the latest message, update conversation summary for chats list
+      if (messages.isNotEmpty && messages.last.id == msg.id) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
+          'lastMessage': trimmed,
+          'lastMessageTime': now,
+          'lastMessageSenderId': msg.senderId,
+          'updatedAt': now,
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      rethrow;
+    }
+  }
 }

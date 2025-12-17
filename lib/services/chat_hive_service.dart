@@ -27,6 +27,12 @@ class ChatHiveService {
     await _box.put(msg.chatId, current.map((m) => m.toMap()).toList());
   }
 
+  static Future<void> deleteMessage(String chatId, String messageId) async {
+    final current = getMessages(chatId);
+    current.removeWhere((m) => m.id == messageId);
+    await _box.put(chatId, current.map((m) => m.toMap()).toList());
+  }
+
   static List<ChatMessage> getPendingQueue() {
     final list = (_box.get('_pending') as List?)?.cast<Map>() ?? [];
     return list.map((m) => ChatMessage.fromMap(Map<String, dynamic>.from(m))).toList();

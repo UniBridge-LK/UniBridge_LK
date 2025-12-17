@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../controllers/chat_controller.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
 import '../models/user_model.dart';
+import '../models/chat_message.dart';
 
 class ChatThreadView extends StatelessWidget {
   final String chatId;
@@ -13,6 +15,85 @@ class ChatThreadView extends StatelessWidget {
 
   final _msgCtrl = TextEditingController();
   final ChatController controller = Get.put(ChatController(), tag: UniqueKey().toString());
+
+  String _formatMessageTime(Timestamp? ts) {
+    if (ts == null) return '';
+    final dt = ts.toDate();
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minute $ampm';
+  }
+
+  void _showMessageActions(BuildContext context, ChatMessage m, bool isMe) {
+    if (!isMe || m.isSystemMessage || m.isDeleted) return;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit message'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final controllerText = TextEditingController(text: m.content);
+                  final result = await showDialog<String>(
+                    context: context,
+                    builder: (ctx) {
+                      return AlertDialog(
+                        title: const Text('Edit message'),
+                        content: TextField(
+                          controller: controllerText,
+                          maxLines: null,
+                          decoration: const InputDecoration(hintText: 'Update your message'),
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, controllerText.text),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (result != null && result.trim().isNotEmpty) {
+                    await controller.editMessage(m, result);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete message'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete message'),
+                      content: const Text('This message will be removed for everyone.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await controller.deleteMessage(m);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +179,9 @@ class ChatThreadView extends StatelessWidget {
                 itemBuilder: (c, i) {
                   final m = messages[messages.length - 1 - i];
                   final isMe = m.senderId == controller.selfId;
+                  final timeText = _formatMessageTime(m.timestamp);
+                  final showActions = isMe && !m.isSystemMessage && !m.isDeleted;
+                  final isDeleted = m.isDeleted;
                   
                   // System message - centered with different styling
                   if (m.isSystemMessage) {
@@ -122,6 +206,13 @@ class ChatThreadView extends StatelessWidget {
                               fontStyle: FontStyle.italic,
                             ),
                           ),
+                          if (timeText.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              timeText,
+                              style: TextStyle(fontSize: 11, color: Colors.blue[700]),
+                            ),
+                          ],
                         ],
                       ),
                     );
@@ -130,49 +221,77 @@ class ChatThreadView extends StatelessWidget {
                   // Regular message
                   return Align(
                     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isMe ? Colors.blue[50] : Colors.grey[200],
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(12),
-                          topRight: const Radius.circular(12),
-                          bottomLeft: Radius.circular(isMe ? 12 : 0),
-                          bottomRight: Radius.circular(isMe ? 0 : 12),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(m.content),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                m.status.name,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: m.status.name == 'pending' 
-                                      ? Colors.amber[700] 
-                                      : Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (m.status.name == 'pending')
-                                const SizedBox(width: 4)
-                              else
-                                const SizedBox.shrink(),
-                              if (m.status.name == 'pending')
-                                Icon(
-                                  Icons.schedule,
-                                  size: 10,
-                                  color: Colors.amber[700],
-                                ),
-                            ],
+                    child: GestureDetector(
+                      onLongPress: showActions ? () => _showMessageActions(context, m, isMe) : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blue[50] : Colors.grey[200],
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(12),
+                            topRight: const Radius.circular(12),
+                            bottomLeft: Radius.circular(isMe ? 12 : 0),
+                            bottomRight: Radius.circular(isMe ? 0 : 12),
                           ),
-                        ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (isDeleted)
+                              Text(
+                                'Message deleted',
+                                style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+                              )
+                            else
+                              Text(m.content),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (timeText.isNotEmpty) ...[
+                                  Text(
+                                    timeText,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (m.isEdited && !isDeleted) ...[
+                                  Text(
+                                    'edited',
+                                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (!isDeleted) ...[
+                                  Text(
+                                    m.status.name,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: m.status.name == 'pending' 
+                                          ? Colors.amber[700] 
+                                          : Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (m.status.name == 'pending')
+                                    const SizedBox(width: 4)
+                                  else
+                                    const SizedBox.shrink(),
+                                  if (m.status.name == 'pending')
+                                    Icon(
+                                      Icons.schedule,
+                                      size: 10,
+                                      color: Colors.amber[700],
+                                    ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
