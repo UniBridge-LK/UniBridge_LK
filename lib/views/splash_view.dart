@@ -5,6 +5,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:chat_with_aks/services/chat_hive_service.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -48,6 +49,16 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
   void _checkAuthAndNavigate() async {
     await Future.delayed(Duration(seconds: 2));
     
+    // Check onboarding FIRST before any auth logic
+    final hasSeenOnboarding = ChatHiveService.hasSeenOnboarding();
+    
+    if (!hasSeenOnboarding) {
+      // First time user → Show onboarding
+      Get.offAllNamed(AppRoutes.onboarding);
+      return;
+    }
+
+    // Only initialize auth if user has seen onboarding
     final authController = Get.put(AuthController(), permanent: true);
 
     await Future.delayed(Duration(milliseconds: 500));

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:chat_with_aks/services/chat_hive_service.dart';
+import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:chat_with_aks/controllers/auth_controller.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -69,8 +72,13 @@ class _OnboardingViewState extends State<OnboardingView> {
     }
   }
 
-  void _completeOnboarding() {
-    Get.back(); // Close onboarding
+  void _completeOnboarding() async {
+    // Mark onboarding as seen
+    await ChatHiveService.setOnboardingSeen();
+    // Initialize AuthController before navigating to login
+    Get.put(AuthController(), permanent: true);
+    // Navigate to login
+    Get.offAllNamed(AppRoutes.login);
   }
 
   @override

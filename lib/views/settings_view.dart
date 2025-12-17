@@ -185,16 +185,16 @@ class SettingsView extends StatelessWidget {
                   );
                 },
               ),
-              SizedBox(height: 12),
-              _buildSettingsTile(
-                context: context,
-                icon: Icons.school,
-                title: 'View Tutorial',
-                subtitle: 'Watch the onboarding guide again',
-                onTap: () {
-                  Get.toNamed(AppRoutes.onboarding);
-                },
-              ),
+              // SizedBox(height: 12),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: Icons.school,
+              //   title: 'View Tutorial',
+              //   subtitle: 'Watch the onboarding guide again',
+              //   onTap: () {
+              //     Get.toNamed(AppRoutes.onboarding);
+              //   },
+              // ),
               SizedBox(height: 12),
               _buildSettingsTile(
                 context: context,

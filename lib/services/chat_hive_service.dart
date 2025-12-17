@@ -49,4 +49,13 @@ class ChatHiveService {
     q.removeWhere((m) => m.id == id);
     await _box.put('_pending', q.map((m) => m.toMap()).toList());
   }
+
+  // Onboarding status
+  static bool hasSeenOnboarding() {
+    return _box.get('has_seen_onboarding', defaultValue: false) as bool;
+  }
+
+  static Future<void> setOnboardingSeen() async {
+    await _box.put('has_seen_onboarding', true);
+  }
 }
