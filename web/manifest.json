@@ -1,6 +1,6 @@
 {
-    "name": "chat_with_aks",
-    "short_name": "chat_with_aks",
+    "name": "UniBridge LK",
+    "short_name": "UniBridge",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

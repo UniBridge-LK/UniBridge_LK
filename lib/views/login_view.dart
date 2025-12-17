@@ -41,20 +41,23 @@ class _LoginViewState extends State<LoginView> {
             children: [
               SizedBox(height: 40),
               Center(child: Container(
-                width: 80,
-                height: 80,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Icon(
-                  Icons.chat_bubble_rounded, 
-                  color: Colors.white, 
-                  size: 40,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Image.asset(
+                    'lib/img/UniBridge_logo.png',
+                    width: 128,
+                    height: 128,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               ),
-              SizedBox(height: 32),
+              SizedBox(height: 5),
               Text(
                 'Welcome Back',
                 style: Theme.of(context).textTheme.headlineLarge,

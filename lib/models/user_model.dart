@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
-import 'package:firebase_auth/firebase_auth.dart';
 
 class UserModel {
   final String id;
@@ -9,6 +8,18 @@ class UserModel {
   final bool isOnline;
   final DateTime lastSeen;
   final DateTime createdAt;
+  final String accountType; // 'individual' or 'organization'
+  final String universityName;
+  final String faculty;
+  final String department;
+  final String organizationName;
+  final bool isEmailVerified;
+  final String role;
+  final String theme;
+  final bool notificationsEnabled;
+  final String? bio;
+  final List<String>? interests;
+  
 
   UserModel({
     required this.id,
@@ -18,6 +29,18 @@ class UserModel {
     this.isOnline = false,
     required this.lastSeen,
     required this.createdAt,
+    this.accountType = '',
+    this.universityName = '',
+    this.faculty = '',
+    this.department = '',
+    this.organizationName = '',
+    this.isEmailVerified = false,
+    this.role = 'user',
+    this.theme = 'light',
+    this.notificationsEnabled = true,
+    this.bio,
+    this.interests,
+    
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +52,17 @@ class UserModel {
       'isOnline': isOnline,
       'lastSeen': lastSeen,
       'createdAt': createdAt,
+      'accountType': accountType,
+      'universityName': universityName,
+      'faculty': faculty,
+      'department': department,
+      'organizationName': organizationName,
+      'isEmailVerified': isEmailVerified,
+      'role': role,
+      'theme': theme,
+      'notificationsEnabled': notificationsEnabled,
+      'bio': bio,
+      'interests': interests,      
     };
   }
 
@@ -54,6 +88,18 @@ class UserModel {
       isOnline: map['isOnline'] ?? false,
       lastSeen: parseDateTime(map['lastSeen']),
       createdAt: parseDateTime(map['createdAt']),
+      accountType: map['accountType'] ?? '',
+      universityName: map['universityName'] ?? '',
+      faculty: map['faculty'] ?? '',
+      department: map['department'] ?? '',
+      organizationName: map['organizationName'] ?? '',
+      isEmailVerified: map['isEmailVerified'] ?? false,
+      role: map['role'] ?? 'user',
+      theme: map['theme'] ?? 'light',
+      notificationsEnabled: map['notificationsEnabled'] ?? true,
+      bio: map['bio'] as String?,
+      interests: map['interests'] is List ? List<String>.from(map['interests']) : null,
+      
     );
   }
 
@@ -65,6 +111,17 @@ class UserModel {
     bool? isOnline,
     DateTime? lastSeen,
     DateTime? createdAt,
+    String? accountType,
+    String? universityName,
+    String? faculty,
+    String? department,
+    String? organizationName,
+    bool? isEmailVerified,
+    String? role,
+    String? theme,
+    bool? notificationsEnabled,
+    String? bio,
+    List<String>? interests,    
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -74,6 +131,17 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
       createdAt: createdAt ?? this.createdAt,
+      accountType: accountType ?? this.accountType,
+      universityName: universityName ?? this.universityName,
+      faculty: faculty ?? this.faculty,
+      department: department ?? this.department,
+      organizationName: organizationName ?? this.organizationName,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      role: role ?? this.role,
+      theme: theme ?? this.theme,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      bio: bio ?? this.bio,
+      interests: interests ?? this.interests,      
     );
   }
 }

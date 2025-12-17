@@ -1,7 +1,6 @@
 import 'package:chat_with_aks/models/user_model.dart';
 import 'package:chat_with_aks/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -35,7 +34,15 @@ class AuthService {
   Future<UserModel?> registerWithEmailAndPassword(
     String email, 
     String password, 
-    String displayName
+    String displayName,
+    {
+      required String accountType,
+      String universityName = '',
+      String faculty = '',
+      String department = '',
+      String organizationName = '',
+    }
+    
     ) async {
       try {
         UserCredential result = await _auth.createUserWithEmailAndPassword(
@@ -53,7 +60,13 @@ class AuthService {
             isOnline: true,
             createdAt: DateTime.now(),
             lastSeen: DateTime.now(),
+            accountType: accountType,
+            universityName: universityName,
+            faculty: faculty,
+            department: department,
+            organizationName: organizationName,
           );
+          // Do NOT save to Firestore yet - wait for OTP verification          
           await _firestoreService.createUser(userModel);
           return userModel;
         }
@@ -91,6 +104,14 @@ class AuthService {
       }
     } catch (e) {
       throw Exception('Failed To Delete Account: ${e.toString()}');
+    }
+  }
+
+  Future<void> saveUserProfileAfterOtpVerification(UserModel userModel) async {
+    try {
+      await _firestoreService.createUser(userModel);
+    } catch (e) {
+      throw Exception('Failed To Save User Profile: ${e.toString()}');
     }
   }
 }
