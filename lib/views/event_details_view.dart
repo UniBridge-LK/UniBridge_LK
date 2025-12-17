@@ -19,6 +19,13 @@ class EventDetailsView extends StatefulWidget {
 class _EventDetailsViewState extends State<EventDetailsView> {
   late EventModel _currentEvent;
 
+  @override
+  void initState() {
+    super.initState();
+    _currentEvent = widget.event;
+    _reloadEventData();
+  }
+
   Future<void> _reloadEventData() async {
     try {
       final doc = await FirebaseFirestore.instance

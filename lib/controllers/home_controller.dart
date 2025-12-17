@@ -6,10 +6,20 @@ class HomeController extends GetxController {
   final RxList<UniversityModel> _universities = <UniversityModel>[].obs;
   final RxBool _isLoading = false.obs;
   final RxString _error = ''.obs;
+  final RxString _searchQuery = ''.obs;
 
   List<UniversityModel> get universities => _universities;
   bool get isLoading => _isLoading.value;
   String get error => _error.value;
+  String get searchQuery => _searchQuery.value;
+
+  List<UniversityModel> get filteredUniversities {
+    final query = _searchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) return _universities;
+    return _universities
+        .where((u) => u.name.toLowerCase().contains(query))
+        .toList(growable: false);
+  }
 
   @override
   void onInit() {
@@ -39,5 +49,9 @@ class HomeController extends GetxController {
 
   void openUniversity(UniversityModel uni) {
     Get.toNamed('/home/university', arguments: {'uni': uni.name, 'uniId': uni.id});
+  }
+
+  void setSearchQuery(String value) {
+    _searchQuery.value = value;
   }
 }

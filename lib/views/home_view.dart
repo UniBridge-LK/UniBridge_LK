@@ -103,6 +103,21 @@ class HomeView extends GetView<HomeController> {
                       color: Colors.grey[700],
                     ),
                   ),
+                  SizedBox(height: 16),
+                  TextField(
+                    onChanged: controller.setSearchQuery,
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      hintText: 'Search universities',
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -126,11 +141,11 @@ class HomeView extends GetView<HomeController> {
                   );
                 }
 
-                final items = controller.universities;
+                final items = controller.filteredUniversities;
                 if (items.isEmpty) {
                   return Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text('No universities available', style: TextStyle(color: Colors.grey[700])),
+                    child: Text('No universities found', style: TextStyle(color: Colors.grey[700])),
                   );
                 }
 

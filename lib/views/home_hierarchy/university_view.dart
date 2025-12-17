@@ -16,6 +16,15 @@ class _UniversityViewState extends State<UniversityView> {
   bool loading = true;
   String error = '';
   List<QueryDocumentSnapshot<Map<String, dynamic>>> faculties = [];
+  String searchQuery = '';
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> get _filteredFaculties {
+    final query = searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return faculties;
+    return faculties
+        .where((doc) => (doc.data()['name'] ?? '').toString().toLowerCase().contains(query))
+        .toList(growable: false);
+  }
 
   @override
   void initState() {
@@ -98,11 +107,26 @@ class _UniversityViewState extends State<UniversityView> {
                 children: [
                   Text('Faculties', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
                   SizedBox(height: 8),
+                  TextField(
+                    onChanged: (value) => setState(() => searchQuery = value),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      hintText: 'Search faculties',
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    ),
+                  ),
+                  SizedBox(height: 8),
                   if (loading)
                     Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 16), child: CircularProgressIndicator()))
                   else if (error.isNotEmpty)
                     Text('Error: $error', style: TextStyle(color: Colors.red))
-                  else if (faculties.isEmpty)
+                  else if (_filteredFaculties.isEmpty)
                     Text('No faculties found', style: TextStyle(color: Colors.grey[700]))
                 ],
               ),
@@ -111,8 +135,8 @@ class _UniversityViewState extends State<UniversityView> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Column(
-                children: List.generate(faculties.length, (index) {
-                  final doc = faculties[index];
+                children: List.generate(_filteredFaculties.length, (index) {
+                  final doc = _filteredFaculties[index];
                   final facName = (doc.data()['name'] ?? '').toString();
                   return Padding(
                     padding: EdgeInsets.only(bottom: 12),
