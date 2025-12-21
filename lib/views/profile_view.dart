@@ -1,8 +1,8 @@
 
-import 'package:chat_with_aks/controllers/profile_controller.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/controllers/profile_controller.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/views/settings_view.dart';
+import 'package:unibridge_lk/views/settings_view.dart';
 import 'package:get/get.dart';
 
 class ProfileView extends StatelessWidget {

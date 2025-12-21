@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/models/chat_models.dart';
-import 'package:chat_with_aks/services/chat_conversations_service.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
-import 'package:chat_with_aks/controllers/auth_controller.dart';
-import 'package:chat_with_aks/models/friend_request_model.dart';
-import 'package:chat_with_aks/models/user_model.dart';
-import 'package:chat_with_aks/models/chat_message.dart';
-import 'package:chat_with_aks/services/chat_cloud_service.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/models/chat_models.dart';
+import 'package:unibridge_lk/services/chat_conversations_service.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
+import 'package:unibridge_lk/controllers/auth_controller.dart';
+import 'package:unibridge_lk/models/friend_request_model.dart';
+import 'package:unibridge_lk/models/user_model.dart';
+import 'package:unibridge_lk/models/chat_message.dart';
+import 'package:unibridge_lk/services/chat_cloud_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:chat_with_aks/views/chat_thread_view.dart';
+import 'package:unibridge_lk/views/chat_thread_view.dart';
 
 class ChatsView extends StatefulWidget {
   const ChatsView({super.key});

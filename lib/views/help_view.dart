@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 
 class HelpView extends StatefulWidget {
   const HelpView({super.key});

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/models/people_data.dart';
-import 'package:chat_with_aks/models/user_model.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/models/people_data.dart';
+import 'package:unibridge_lk/models/user_model.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
 
 class UserProfileView extends StatelessWidget {
   final PersonData? person;

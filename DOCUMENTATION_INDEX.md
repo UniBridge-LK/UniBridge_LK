@@ -128,7 +128,7 @@ This document summarizes all documentation available for the UniBridge LK Flutte
 ## Documentation Structure
 
 ```
-chat_with_aks/
+unibridge_lk/
 ├── README.md                          # Project setup & architecture
 ├── USER_MANUAL.md                     # User guide & FAQs
 ├── ONBOARDING_HELP_GUIDE.md          # Help features documentation

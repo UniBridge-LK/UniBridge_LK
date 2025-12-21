@@ -1,7 +1,7 @@
-import 'package:chat_with_aks/controllers/home_controller.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:chat_with_aks/models/university_model.dart';
+import 'package:unibridge_lk/controllers/home_controller.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
+import 'package:unibridge_lk/models/university_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

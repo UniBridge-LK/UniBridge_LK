@@ -1,12 +1,12 @@
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/views/home_view.dart';
-import 'package:chat_with_aks/views/people_view.dart';
-import 'package:chat_with_aks/views/events_view.dart';
-import 'package:chat_with_aks/views/chats_view.dart';
-import 'package:chat_with_aks/views/profile_view.dart';
+import 'package:unibridge_lk/views/home_view.dart';
+import 'package:unibridge_lk/views/people_view.dart';
+import 'package:unibridge_lk/views/events_view.dart';
+import 'package:unibridge_lk/views/chats_view.dart';
+import 'package:unibridge_lk/views/profile_view.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/controllers/main_controller.dart';
+import 'package:unibridge_lk/controllers/main_controller.dart';
 
 class MainView extends GetView<MainController> {
 	const MainView({super.key});

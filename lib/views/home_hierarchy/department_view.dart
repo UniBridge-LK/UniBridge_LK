@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 
 class DepartmentView extends StatelessWidget {
   const DepartmentView({super.key});

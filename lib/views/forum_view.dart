@@ -1,8 +1,8 @@
-import 'package:chat_with_aks/controllers/forum_controller.dart';
-import 'package:chat_with_aks/models/thread_model.dart';
+import 'package:unibridge_lk/controllers/forum_controller.dart';
+import 'package:unibridge_lk/models/thread_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 
 class ForumView extends StatefulWidget {
   const ForumView({super.key});

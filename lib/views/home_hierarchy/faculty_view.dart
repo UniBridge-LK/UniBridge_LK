@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FacultyView extends StatefulWidget {

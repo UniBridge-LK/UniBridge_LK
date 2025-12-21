@@ -19,8 +19,8 @@ static const String help = '/help';
 **File**: `lib/routes/app_pages.dart`
 ```dart
 // Imports added
-import 'package:chat_with_aks/views/onboarding_view.dart';
-import 'package:chat_with_aks/views/help_view.dart';
+import 'package:unibridge_lk/views/onboarding_view.dart';
+import 'package:unibridge_lk/views/help_view.dart';
 
 // Routes added
 GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
@@ -31,7 +31,7 @@ GetPage(name: AppRoutes.help, page: () => const HelpView()),
 **File**: `lib/views/settings_view.dart`
 ```dart
 // Import added
-import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
 
 // Tile added
 _buildSettingsTile(

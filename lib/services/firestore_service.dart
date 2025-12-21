@@ -1,14 +1,14 @@
-import 'package:chat_with_aks/models/chat_models.dart';
-import 'package:chat_with_aks/models/friend_request_model.dart';
-import 'package:chat_with_aks/models/friendship_model.dart';
-import 'package:chat_with_aks/models/message_model.dart';
-import 'package:chat_with_aks/models/notification_model.dart';
-import 'package:chat_with_aks/models/university_model.dart';
-import 'package:chat_with_aks/models/user_model.dart';
+import 'package:unibridge_lk/models/chat_models.dart';
+import 'package:unibridge_lk/models/friend_request_model.dart';
+import 'package:unibridge_lk/models/friendship_model.dart';
+import 'package:unibridge_lk/models/message_model.dart';
+import 'package:unibridge_lk/models/notification_model.dart';
+import 'package:unibridge_lk/models/university_model.dart';
+import 'package:unibridge_lk/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:chat_with_aks/models/thread_model.dart';
-import 'package:chat_with_aks/models/reply_model.dart';
+import 'package:unibridge_lk/models/thread_model.dart';
+import 'package:unibridge_lk/models/reply_model.dart';
 // firebase_core import removed (not required here)
 
 class FirestoreService {

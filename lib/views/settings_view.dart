@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/controllers/profile_controller.dart';
-import 'package:chat_with_aks/controllers/settings_controller.dart';
-import 'package:chat_with_aks/controllers/auth_controller.dart';
-import 'package:chat_with_aks/controllers/change_password_controller.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/controllers/profile_controller.dart';
+import 'package:unibridge_lk/controllers/settings_controller.dart';
+import 'package:unibridge_lk/controllers/auth_controller.dart';
+import 'package:unibridge_lk/controllers/change_password_controller.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -394,67 +394,6 @@ class SettingsView extends StatelessWidget {
                   )
                 : Text('Change'),
           )),
-        ],
-      ),
-    );
-  }
-
-  void _showContactSupportDialog(BuildContext context) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('Contact Support'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'How can we help?',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            SizedBox(height: 16),
-            ListTile(
-              leading: Icon(Icons.email),
-              title: Text('Email Support'),
-              onTap: () {
-                Get.back();
-                Get.snackbar(
-                  'Email',
-                  'Opening email client... (mock)',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.chat),
-              title: Text('Live Chat'),
-              onTap: () {
-                Get.back();
-                Get.snackbar(
-                  'Chat',
-                  'Opening live chat... (mock)',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.phone),
-              title: Text('Call Support'),
-              onTap: () {
-                Get.back();
-                Get.snackbar(
-                  'Phone',
-                  'Dialing support number... (mock)',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('Close'),
-          ),
         ],
       ),
     );

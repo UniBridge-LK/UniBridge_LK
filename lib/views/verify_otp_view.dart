@@ -1,6 +1,6 @@
-import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:chat_with_aks/services/otp_service.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
+import 'package:unibridge_lk/services/otp_service.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

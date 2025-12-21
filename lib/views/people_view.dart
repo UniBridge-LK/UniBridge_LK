@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
-import 'package:chat_with_aks/controllers/auth_controller.dart';
-import 'package:chat_with_aks/controllers/people_controller.dart';
-import 'package:chat_with_aks/models/friend_request_model.dart';
-import 'package:chat_with_aks/models/user_model.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
+import 'package:unibridge_lk/controllers/auth_controller.dart';
+import 'package:unibridge_lk/controllers/people_controller.dart';
+import 'package:unibridge_lk/models/friend_request_model.dart';
+import 'package:unibridge_lk/models/user_model.dart';
 import 'package:uuid/uuid.dart';
-import 'package:chat_with_aks/widgets/premium_popup.dart';
-import 'package:chat_with_aks/views/user_profile_view.dart';
+import 'package:unibridge_lk/widgets/premium_popup.dart';
+import 'package:unibridge_lk/views/user_profile_view.dart';
 
 class PeopleView extends StatefulWidget {
   const PeopleView({super.key});

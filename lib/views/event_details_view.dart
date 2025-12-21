@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/models/event_model.dart';
-import 'package:chat_with_aks/views/add_event_view.dart';
-import 'package:chat_with_aks/views/user_profile_view.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
+import 'package:unibridge_lk/models/event_model.dart';
+import 'package:unibridge_lk/views/add_event_view.dart';
+import 'package:unibridge_lk/views/user_profile_view.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 

@@ -1,9 +1,9 @@
-import 'package:chat_with_aks/models/user_model.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:chat_with_aks/services/auth_service.dart';
+import 'package:unibridge_lk/models/user_model.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
+import 'package:unibridge_lk/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_with_aks/services/otp_service.dart';
+import 'package:unibridge_lk/services/otp_service.dart';
 import 'package:get/get.dart';
 // removed unused import
 import 'package:flutter/foundation.dart';

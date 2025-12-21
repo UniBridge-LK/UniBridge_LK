@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
-import 'package:chat_with_aks/views/event_details_view.dart';
-import 'package:chat_with_aks/views/add_event_view.dart';
-import 'package:chat_with_aks/controllers/events_controller.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
+import 'package:unibridge_lk/views/event_details_view.dart';
+import 'package:unibridge_lk/views/add_event_view.dart';
+import 'package:unibridge_lk/controllers/events_controller.dart';
 import 'package:get/get.dart';
 
 class EventsView extends StatelessWidget {

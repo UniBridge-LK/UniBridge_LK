@@ -1,12 +1,12 @@
-import 'package:chat_with_aks/routes/app_pages.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/routes/app_pages.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:chat_with_aks/firebase_options.dart';
-import 'package:chat_with_aks/controllers/settings_controller.dart';
+import 'package:unibridge_lk/firebase_options.dart';
+import 'package:unibridge_lk/controllers/settings_controller.dart';
 import 'package:get/get.dart';
-import 'package:chat_with_aks/services/chat_hive_service.dart';
-import 'package:chat_with_aks/services/chat_sync_service.dart';
+import 'package:unibridge_lk/services/chat_hive_service.dart';
+import 'package:unibridge_lk/services/chat_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

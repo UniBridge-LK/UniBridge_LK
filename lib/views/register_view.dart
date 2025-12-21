@@ -1,7 +1,7 @@
-import 'package:chat_with_aks/controllers/auth_controller.dart';
-import 'package:chat_with_aks/routes/app_routes.dart';
-import 'package:chat_with_aks/services/firestore_service.dart';
-import 'package:chat_with_aks/theme/app_theme.dart';
+import 'package:unibridge_lk/controllers/auth_controller.dart';
+import 'package:unibridge_lk/routes/app_routes.dart';
+import 'package:unibridge_lk/services/firestore_service.dart';
+import 'package:unibridge_lk/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';

@@ -1,5 +1,5 @@
-import 'package:chat_with_aks/controllers/events_controller.dart';
-import 'package:chat_with_aks/models/event_model.dart';
+import 'package:unibridge_lk/controllers/events_controller.dart';
+import 'package:unibridge_lk/models/event_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
