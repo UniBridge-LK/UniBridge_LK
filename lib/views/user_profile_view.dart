@@ -21,6 +21,15 @@ class UserProfileView extends StatelessWidget {
     
     // If no person/user, show error
     if (displayPerson == null && selectedUser == null) {
+      // 1. FOR DEVELOPERS:
+      // This line ONLY runs in Debug mode. It crashes the app intentionally 
+      // so you see the red screen and fix the navigation bug immediately.
+      // assert(false, "ERROR: You navigated to UserProfileView without a user object!");
+
+      // 2. FOR PRODUCTION USERS:
+      // If the app is in Release mode, the 'assert' is ignored.
+      // The code continues here and shows the safe fallback screen.
+
       return Scaffold(
         appBar: AppBar(title: Text('Profile')),
         body: Center(child: Text('User not found')),

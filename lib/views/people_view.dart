@@ -363,7 +363,7 @@ class _PeopleViewState extends State<PeopleView> {
                   child: TextField(
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search),
-                      hintText: 'Search by name',
+                      hintText: 'Search by name, university, faculty, department',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                       filled: true,
                       fillColor: Colors.grey.shade100,
