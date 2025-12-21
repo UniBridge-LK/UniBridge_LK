@@ -62,8 +62,8 @@ class PeopleController extends GetxController {
             
             debugPrint('User ${user.displayName}: id=${user.id}, isCurrent=$isCurrentUser');
             
-            // Show all users except current user
-            return !isCurrentUser;
+            // Show all users except current user and admin
+            return !isCurrentUser && user.role != 'admin';
           }).toList();
           
           debugPrint('Filtered to ${filteredUsers.length} users');

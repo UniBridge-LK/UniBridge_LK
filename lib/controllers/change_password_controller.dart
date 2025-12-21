@@ -26,9 +26,9 @@ class ChangePasswordController  extends GetxController{
 
     VoidCallback get toggleCurrentPasswordVisibility => toggleObscureCurrentPassword;
 
-  VoidCallback get toggleNewPasswordVisibility => toggleObscureNewPassword;
+    VoidCallback get toggleNewPasswordVisibility => toggleObscureNewPassword;
 
-  VoidCallback get toggleConfirmPasswordVisibility => toggleObscureConfirmPassword;
+    VoidCallback get toggleConfirmPasswordVisibility => toggleObscureConfirmPassword;
 
     @override
     void onClose() {
