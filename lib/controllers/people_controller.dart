@@ -85,6 +85,8 @@ class PeopleController extends GetxController {
     }
   }
 
+  //used for Error Recovery
+  // When is this actually used: After an Error: If the internet was down when the user first opened the app, the screen will show an error. This function is attached to the "Retry" button so the user can try again.
   void refreshUsers() {
     _loadUsers();
   }

@@ -8,7 +8,7 @@ class UserModel {
   final bool isOnline;
   final DateTime lastSeen;
   final DateTime createdAt;
-  final String accountType; // 'individual' or 'organization'
+  final String accountType;
   final String universityName;
   final String faculty;
   final String department;

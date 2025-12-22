@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/chat_message.dart';
-// ignore: unused_import
-import '../models/chat_models.dart';
 
 class ChatCloudService {
   static final _db = FirebaseFirestore.instance;
